@@ -1,8 +1,11 @@
 
 import java.awt.BasicStroke;
+import java.awt.geom.Line2D;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Vector;
+import java.util.TreeMap;
 import knižnica.*;
 import static knižnica.Kláves.*;
 import static knižnica.Svet.*;
@@ -11,16 +14,30 @@ import static knižnica.ÚdajeUdalostí.*;
 import static debug.Debug.*;
 
 /*
-TODO:
+TODO
 
  • Zarovnanie na mriežku. Upraviť parameter mriežky.
- • Úprava vzhľadových vlastností. (pomer, veľkosť, zaoblenie, písmo, poloha
-   popisu, viacriadkovosť popisu)
+ • Úprava vzhľadových vlastností. (pomer, veľkosť, miera zaoblenia, uhol,
+   písmo, poloha popisu, viacriadkovosť popisu)
  • (podfarbenie? zmena poradia?)
 
  • (kapacita do dopravníka je zbytočná; úvodné zdžanie (aby mohol „nastúpiť“
     ďalší zákazník) tiež nie je potrebné, všetko sa dá docieliť vhodnou
     kombináciou rôznych typov liniek)
+
+ ✓ Animovať zákazníkov v dopravníku tak, aby sa postupne presúvali
+   od jedného kraja po druhý.
+
+ ✓ Nejako rozmiesniť zákazníkov v zásobníku a čakárni (vedľa seba?, do
+   kruhu? – nakoniec to bolo náhodne).
+
+ • S presúvaním linky presúvať aj zákazníkov v nej.
+
+Ponuka Simulácia
+
+ • Zastaviť/spustiť
+ • Reštartovať
+ • Zmeniť rýchlosť
 
 */
 
@@ -36,6 +53,12 @@ public class Systém extends GRobot
 	// Globálny čas:
 	public static double čas = 0;
 	public static double dilatácia = 1.0;
+
+
+	// Globálna štatistika:
+	public static int odídených = 0;
+	public static int vybavených = 0;
+	public final static TreeMap<Linka, Integer> mapaOdchodov = new TreeMap<>();
 
 
 	// Konštanty príkazov klávesových skratiek:
@@ -54,13 +77,14 @@ public class Systém extends GRobot
 	private final static String newLink = "newLink";
 	private final static String editLabels = "editLabels";
 	private final static String editParams = "editParams";
+	private final static String editVisuals = "editVisuals";
 
 
 	// Hlavná ponuka:
-	// TODO-del private PoložkaPonuky položkaUpravPopisy;
 
 	private KontextováPoložka položkaZmeňNaEmitory;
 	private KontextováPoložka položkaZmeňNaZásobníky;
+	private KontextováPoložka položkaZmeňNaČakárne;
 	private KontextováPoložka položkaZmeňNaDopravníky;
 	private KontextováPoložka položkaZmeňNaMeniče;
 	private KontextováPoložka položkaZmeňNaUvoľňovače;
@@ -69,15 +93,14 @@ public class Systém extends GRobot
 	private KontextováPoložka položkaZmeňNaObdĺžniky;
 	private KontextováPoložka položkaZmeňNaObléObdĺžniky;
 
-	// TODO-del private PoložkaPonuky položkaUpravKoeficientyOznačených;
-
 
 	// Rôzne príznaky a pomocné atribúty:
 	private boolean posúvajObjekty = false;
+	private boolean tvorVýber = false;
 	private boolean tvorSpojnicu = false;
 	private boolean mažSpojnicu = false;
-	private Bod začiatokSpojnice = null;
-	private Bod koniecSpojnice = null;
+	private Bod začiatokAkcie = null;
+	private Bod koniecAkcie = null;
 
 
 	// Cieľom súkromnosti konštruktora je vytvorenie jedinej inštancie
@@ -110,6 +133,7 @@ public class Systém extends GRobot
 		pridajKlávesovúSkratku(newLink, VK_M);
 		pridajKlávesovúSkratku(editLabels, VK_F2, 0);
 		pridajKlávesovúSkratku(editParams, VK_F9, 0);
+		pridajKlávesovúSkratku(editVisuals, VK_F7, 0);
 
 		vymažPonuku();
 
@@ -142,7 +166,6 @@ public class Systém extends GRobot
 		pridajPoložkuHlavnejPonuky("Linka", VK_L);
 		pridajPoložkuPonuky("Nová linka", VK_N).príkaz(newLink);
 		pridajOddeľovačPonuky();
-		// TODO-del (položkaUpravPopisy =
 		pridajPoložkuPonuky("Uprav popisy označených…",
 			VK_P).príkaz(editLabels);
 
@@ -151,6 +174,8 @@ public class Systém extends GRobot
 		položkaZmeňNaEmitory.setMnemonic(VK_E);
 		položkaZmeňNaZásobníky = new KontextováPoložka("Zmeň na zásobníky");
 		položkaZmeňNaZásobníky.setMnemonic(VK_Z);
+		položkaZmeňNaČakárne = new KontextováPoložka("Zmeň na čakárne");
+		položkaZmeňNaČakárne.setMnemonic(VK_A);
 		položkaZmeňNaDopravníky = new KontextováPoložka("Zmeň na dopravníky");
 		položkaZmeňNaDopravníky.setMnemonic(VK_D);
 		položkaZmeňNaMeniče = new KontextováPoložka("Zmeň na meniče");
@@ -160,8 +185,8 @@ public class Systém extends GRobot
 
 		pridajVnorenúPonuku("Zmeň funkciu (účel) označených",
 			položkaZmeňNaEmitory, položkaZmeňNaZásobníky,
-			položkaZmeňNaDopravníky, položkaZmeňNaMeniče,
-			položkaZmeňNaUvoľňovače).setMnemonic(VK_F);
+			položkaZmeňNaČakárne, položkaZmeňNaDopravníky,
+			položkaZmeňNaMeniče, položkaZmeňNaUvoľňovače).setMnemonic(VK_F);
 
 
 		položkaZmeňNaElipsy = new KontextováPoložka("Zmeň na elipsy");
@@ -177,10 +202,10 @@ public class Systém extends GRobot
 		setMnemonic(VK_T);
 
 
-		// TODO-del (položkaUpravKoeficientyOznačených =
 		pridajPoložkuPonuky("Uprav koeficienty označených…",
 			VK_I).príkaz(editParams);
-		// pridajOddeľovačPonuky();
+		pridajPoložkuPonuky("Uprav vizuálne vlastnosti označených…",
+			VK_Z).príkaz(editVisuals);
 
 
 		kresliDoObrázka(ikonaOznačenia);
@@ -195,6 +220,28 @@ public class Systém extends GRobot
 
 
 	// Rôzne akcie väčšinou zodpovedajúce vykonaniu príkazov položiek ponuky:
+
+	public void vymažLinkyNaKurzore()
+	{
+		Bod myš = polohaMyši();
+		Linka[] aktívne = Linka.dajAktívne();
+		for (Linka linka : aktívne)
+		{
+			Spojnica[] spojnice = linka.spojniceZ();
+			for (Spojnica spojnica : spojnice)
+			{
+				Line2D.Double tvar = spojnica.tvar();
+				if (vzdialenosťBoduOdÚsečky(myš.polohaX(), myš.polohaY(),
+					prepočítajSpäťX(tvar.x1), prepočítajSpäťY(tvar.y1),
+					prepočítajSpäťX(tvar.x2), prepočítajSpäťY(tvar.y2)) < 10)
+				{
+					/* správa("Spojnica z " + spojnica.zdroj() + " do " +
+						spojnica.cieľ()); */
+					spojnica.zdroj().zrušSpojnicu(spojnica.cieľ());
+				}
+			}
+		}
+	}
 
 	public void newSystem()
 	{
@@ -317,41 +364,21 @@ public class Systém extends GRobot
 
 	public void newLink()
 	{
-		Linka.pridaj(zadajReťazec("Zadajte popis novej linky",
-			"Vlastnosti linky")).skočNaMyš();
+		Linka.pridaj(zadajReťazec("Zadajte popis novej linky:",
+			"Popis linky")).skočNaMyš();
 	}
 
 
 	// Obsluha udalostí:
 
-	/* TODO-del private boolean overOznačenie()
-	{
-		if (0 == Linka.početOznačených())
-		{
-			varovanie("Nie sú označené žiadne linky.", "Varovanie…");
-			return false;
-		}
-		return true;
-	}*/
-
-	@Override public void voľbaPoložkyPonuky()
-	{
-		// if (položkaUpravPopisy.aktivovaná())
-		// TODO-del {
-		// 	if (overOznačenie())
-				// Linka.upravPopisy();
-		// }
-		// else if (položkaUpravKoeficientyOznačených.aktivovaná())
-		// TODO-del {
-		// 	if (overOznačenie())
-				// Linka.upravKoeficientyOznačených();
-		// }
-	}
+	// (rezervované)
+	// @Override public void voľbaPoložkyPonuky() { }
 
 	@Override public void voľbaKontextovejPoložky()
 	{
 		if (položkaZmeňNaEmitory.aktivovaná()) Linka.zmeňNaEmitory();
 		else if (položkaZmeňNaZásobníky.aktivovaná()) Linka.zmeňNaZásobníky();
+		else if (položkaZmeňNaČakárne.aktivovaná()) Linka.zmeňNaČakárne();
 		else if (položkaZmeňNaDopravníky.aktivovaná()) Linka.zmeňNaDopravníky();
 		else if (položkaZmeňNaMeniče.aktivovaná()) Linka.zmeňNaMeniče();
 		else if (položkaZmeňNaUvoľňovače.aktivovaná()) Linka.zmeňNaUvoľňovače();
@@ -379,6 +406,7 @@ public class Systém extends GRobot
 		else if (newLink == príkaz) newLink();
 		else if (editLabels == príkaz) Linka.upravPopisy();
 		else if (editParams == príkaz) Linka.upravKoeficientyOznačených();
+		else if (editVisuals == príkaz) Linka.upravVizuályOznačených();
 	}
 
 	@Override public void stlačenieKlávesu()
@@ -396,7 +424,7 @@ public class Systém extends GRobot
 		{
 			Linka[] označené = Linka.dajOznačené();
 			int početOznačených = označené.length;
-	
+
 			for (int i = 0; i < početOznačených; ++i)
 				označené[i].skoč(p.getX(), p.getY());
 		}
@@ -405,37 +433,51 @@ public class Systém extends GRobot
 
 	/*
 	TODO
+
 	Vytvor klávesnicový spôsob na vytvorenie spojnice medzi linkami:
-	 • Označ začiatok
-	 • Stlač klávesovú skratku (ESC to ruší)
-	 • Označ koniec
-	 • Stlač klávesovú skratku
-	
+	 • Označ začiatok
+	 • Stlač klávesovú skratku (ESC to ruší)
+	 • Označ koniec
+	 • Stlač klávesovú skratku
+
 	Ctrl + klik na spojnicu = vymazanie.
 	*/
+
 	@Override public void stlačenieTlačidlaMyši()
 	{
 		if (tlačidloMyši(ĽAVÉ))
 		{
-			if (myš().isControlDown())
+			if (myš().isControlDown() && myš().isAltDown())
 			{
 				posúvajObjekty = false;
+				tvorVýber = true;
 				tvorSpojnicu = false;
-				mažSpojnicu = true;
-				začiatokSpojnice = polohaMyši();
-				koniecSpojnice = null;
+				mažSpojnicu = false;
+				začiatokAkcie = polohaMyši();
+				koniecAkcie = null;
+			}
+			else if (myš().isControlDown())
+			{
+				posúvajObjekty = false;
+				tvorVýber = false;
+				tvorSpojnicu = true;
+				mažSpojnicu = false;
+				začiatokAkcie = polohaMyši();
+				koniecAkcie = null;
 			}
 			else if (myš().isAltDown())
 			{
 				posúvajObjekty = false;
-				tvorSpojnicu = true;
-				mažSpojnicu = false;
-				začiatokSpojnice = polohaMyši();
-				koniecSpojnice = null;
+				tvorVýber = false;
+				tvorSpojnicu = false;
+				mažSpojnicu = true;
+				začiatokAkcie = polohaMyši();
+				koniecAkcie = null;
 			}
 			else
 			{
 				posúvajObjekty = myš().isShiftDown();
+				tvorVýber = false;
 				tvorSpojnicu = false;
 				mažSpojnicu = false;
 			}
@@ -443,6 +485,7 @@ public class Systém extends GRobot
 		else
 		{
 			posúvajObjekty = tlačidloMyši(STREDNÉ);
+			tvorVýber = false;
 			tvorSpojnicu = false;
 			mažSpojnicu = false;
 		}
@@ -450,9 +493,9 @@ public class Systém extends GRobot
 
 	@Override public void ťahanieMyšou()
 	{
-		if (mažSpojnicu || tvorSpojnicu)
+		if (mažSpojnicu || tvorSpojnicu || tvorVýber)
 		{
-			koniecSpojnice = polohaMyši();
+			koniecAkcie = polohaMyši();
 			žiadajPrekreslenie();
 		}
 		else if (posúvajObjekty)
@@ -470,31 +513,63 @@ public class Systém extends GRobot
 
 	@Override public void uvoľnenieTlačidlaMyši()
 	{
-		if (mažSpojnicu || tvorSpojnicu)
+		if (mažSpojnicu || tvorSpojnicu || tvorVýber)
 		{
-			if (null != začiatokSpojnice && null != koniecSpojnice)
+			if (null != začiatokAkcie && null != koniecAkcie)
 			{
-				Linka začiatok = null, koniec = null;
-				Linka[] aktívne = Linka.dajAktívne();
-				for (Linka linka : aktívne)
+				if (tvorVýber)
 				{
-					if (linka.bodV(začiatokSpojnice)) začiatok = linka;
-					if (linka.bodV(koniecSpojnice)) koniec = linka;
-				}
+					double
+						x1 = začiatokAkcie.polohaX(),
+						y1 = začiatokAkcie.polohaY(),
+						x2 = koniecAkcie.polohaX(),
+						y2 = koniecAkcie.polohaY();
 
-				if (null != začiatok && null != koniec)
+					if (x1 > x2)
+					{
+						double x = x1;
+						x1 = x2; x2 = x;
+					}
+
+					if (y1 > y2)
+					{
+						double y = y1;
+						y1 = y2; y2 = y;
+					}
+
+					Linka[] aktívne = Linka.dajAktívne();
+					for (Linka linka : aktívne)
+					{
+						Poloha p = linka.poloha();
+						linka.označ(p.polohaX() >= x1 && p.polohaX() <= x2 &&
+							p.polohaY() >= y1 && p.polohaY() <= y2);
+					}
+				}
+				else
 				{
-					if (mažSpojnicu)
-						začiatok.zrušSpojnicu(koniec);
-					else
-						začiatok.spojnica(koniec);
+					Linka začiatok = null, koniec = null;
+					Linka[] aktívne = Linka.dajAktívne();
+					for (Linka linka : aktívne)
+					{
+						if (linka.bodV(začiatokAkcie)) začiatok = linka;
+						if (linka.bodV(koniecAkcie)) koniec = linka;
+					}
+
+					if (null != začiatok && null != koniec)
+					{
+						if (mažSpojnicu)
+							začiatok.zrušSpojnicu(koniec);
+						else
+							začiatok.spojnica(koniec);
+					}
 				}
 			}
 
+			tvorVýber = false;
 			tvorSpojnicu = false;
 			mažSpojnicu = false;
-			začiatokSpojnice = null;
-			koniecSpojnice = null;
+			začiatokAkcie = null;
+			koniecAkcie = null;
 		}
 		posúvajObjekty = false;
 	}
@@ -504,17 +579,89 @@ public class Systém extends GRobot
 		if (mažSpojnicu || tvorSpojnicu)
 		{
 			if (mažSpojnicu) farba(svetločervená); else farba(svetlošedá);
-			if (null != začiatokSpojnice)
-				skočNa(začiatokSpojnice);
-			if (null != koniecSpojnice)
-				choďNa(koniecSpojnice);
+			if (null != začiatokAkcie)
+				skočNa(začiatokAkcie);
+			if (null != koniecAkcie)
+				choďNa(koniecAkcie);
+		}
+		else if (tvorVýber)
+		{
+			farba(zelená);
+			if (null != začiatokAkcie && null != koniecAkcie)
+			{
+				double x1, y1, x2, y2;
+
+				skočNa(začiatokAkcie);
+				choďNa(x1 = začiatokAkcie.polohaX(),
+					y2 = koniecAkcie.polohaY());
+				choďNa(koniecAkcie);
+				choďNa(x2 = koniecAkcie.polohaX(),
+					y1 = začiatokAkcie.polohaY());
+				choďNa(začiatokAkcie);
+
+				if (x1 > x2)
+				{
+					double x = x1;
+					x1 = x2; x2 = x;
+				}
+
+				if (y1 > y2)
+				{
+					double y = y1;
+					y1 = y2; y2 = y;
+				}
+
+				Linka[] aktívne = Linka.dajAktívne();
+				for (Linka linka : aktívne)
+				{
+					Poloha p = linka.poloha();
+					linka.označ(p.polohaX() >= x1 && p.polohaX() <= x2 &&
+						p.polohaY() >= y1 && p.polohaY() <= y2);
+				}
+			}
 		}
 
-		// TODO: dať vypnuteľné:
+		// TODO dať vypnuteľné
 		{
 			farba(čierna);
 			skočNa(ľavýOkraj() + 10, hornýOkraj() - výškaRiadka());
+
 			text("Čas: " + F(čas, 3), KRESLI_PRIAMO);
+			skoč(0, -výškaRiadka());
+
+			text("Rýchlosť: " + F(dilatácia, 2), KRESLI_PRIAMO);
+			skoč(0, -výškaRiadka());
+
+			if (0 != odídených)
+			{
+				text("Odišlo nevybavených: " + odídených, KRESLI_PRIAMO);
+				skoč(0, -výškaRiadka());
+			}
+
+			if (0 != vybavených)
+			{
+				text("Vybavených: " + vybavených, KRESLI_PRIAMO);
+				skoč(0, -výškaRiadka());
+			}
+
+			boolean prvý = true;
+			for (Map.Entry<Linka, Integer> záznam : mapaOdchodov.entrySet())
+			{
+				Linka linka = záznam.getKey();
+				Integer počet = záznam.getValue();
+
+				if (prvý)
+				{
+					skoč(0, -výškaRiadka());
+					text("Linky nevybavených:", KRESLI_PRIAMO);
+					skoč(0, -1.5 * výškaRiadka());
+					prvý = false;
+				}
+
+				skoč(10, 0);
+				text(linka.popis() + ": " + počet, KRESLI_PRIAMO);
+				skoč(-10, -výškaRiadka());
+			}
 		}
 	}
 
@@ -553,8 +700,9 @@ public class Systém extends GRobot
 	{
 		if (myš().getClickCount() > 1)
 		{
-			if (tlačidloMyši(ĽAVÉ)) Linka.upravKoeficientyOznačených();
-			// TODO upraviť parametre vzhľadu
+			if (myš().isControlDown()) vymažLinkyNaKurzore();
+			else if (tlačidloMyši(ĽAVÉ)) Linka.upravKoeficientyOznačených();
+			else Linka.upravVizuályOznačených();
 		}
 		else if (debugOn) krok();
 	}

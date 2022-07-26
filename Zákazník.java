@@ -20,7 +20,8 @@ public class Zákazník extends GRobot implements Činnosť
 
 
 	// Globálna konfigurácia zákazníkov:
-	public static double faktorZrýchlenia = 2.5;
+	public static double faktorZrýchlenia = 5.0;
+	public static double faktorMaximálnejRýchlosti = 100.0;
 
 
 	// Vnútorné stavy:
@@ -66,12 +67,64 @@ public class Zákazník extends GRobot implements Činnosť
 		čas = Systém.čas;
 
 		zrušCieľ();
-		maximálnaRýchlosť(50.0 * Systém.dilatácia);
+		maximálnaRýchlosť(faktorMaximálnejRýchlosti * Systém.dilatácia);
 		zrýchlenie(0, false);
 		rýchlosť(0, false);
 
 		odchádza = false;
 		aktivuj(false);
+	}
+
+
+	// Rôzne aktivity:
+
+	public void upravCieľPodľaLinky() { upravCieľPodľaLinky(false); }
+	public void upravCieľPodľaLinky(boolean počiatočný)
+	{
+		if (null != vLinke)
+		{
+			if (vLinke.jeDopravník())
+			{
+				Bod poloha = vLinke.poloha();
+
+				if (0 != interval)
+				{
+					double percento = max(0,
+						(čas - Systém.čas) / interval);
+
+					vLinke.preskočVľavo(vLinke.šírka() *
+						percento - (vLinke.šírka() / 2));
+				}
+
+				if (smerujeDoCieľa() || počiatočný)
+					upravCieľ(vLinke, false);
+				else
+					skočNa(vLinke);
+
+				vLinke.poloha(poloha);
+			}
+			else if (vLinke.jeZásobník() || vLinke.jeČakáreň())
+			{
+				Bod poloha = poloha();
+				double uhol = uhol();
+
+				poloha(vLinke);
+				uhol(vLinke);
+				double š = (vLinke.šírka() / 2) - veľkosť() - 5;
+				double v = (vLinke.výška() / 2) - veľkosť() - 5;
+				preskoč(náhodnéReálneČíslo(-š, š), náhodnéReálneČíslo(-v, v));
+				Bod cieľ = poloha();
+
+				uhol(uhol);
+				poloha(poloha);
+
+				upravCieľ(cieľ, false);
+			}
+			else
+			{
+				upravCieľ(vLinke, false);
+			}
+		}
 	}
 
 
@@ -140,6 +193,7 @@ public class Zákazník extends GRobot implements Činnosť
 		{
 		case EMITOR: farba(svetlomodrá); break;
 		case ZÁSOBNÍK: farba(svetlofialová); break;
+		case ČAKÁREŇ: farba(svetlotyrkysová); break;
 		case DOPRAVNÍK: farba(svetlohnedá); break;
 		case MENIČ: farba(svetlooranžová); break;
 		case UVOĽŇOVAČ: farba(svetlozelená); break;
@@ -163,6 +217,14 @@ public class Zákazník extends GRobot implements Činnosť
 	{
 		Boolean retval = null; try { debugIn("(", this, ")");
 
+		if (null != vLinke)
+		{
+			if (vLinke.jeDopravník())
+			{
+				upravCieľPodľaLinky();
+			}
+		}
+
 		if (čas < Systém.čas)
 		{
 			if (odchádza)
@@ -172,9 +234,11 @@ public class Zákazník extends GRobot implements Činnosť
 			}
 			else if (null != vLinke)
 			{
-				// Čakanie v zásobníku je časovo neobmedzené, preto musí
-				// zásobník neustále sledovať, či sa neuvoľnila nejaká linka
-				// pre prvého čakajúceho zákazníka, aby ho tam mohol poslať.
+				// Čakanie v zásobníku je (na rozdiel od čakárne) časovo
+				// neobmedzené, preto je kľúčové, aby zásobník neustále
+				// sledoval, či sa neuvoľnila nejaká linka pre prvého
+				// čakajúceho zákazníka (aby ho tam mohol poslať). Inak by
+				// v ňom zákazníci čakali donekonečna.
 
 				if (vLinke.jeZásobník()) return retval = false;
 
@@ -195,8 +259,12 @@ public class Zákazník extends GRobot implements Činnosť
 								linka.jeZásobník()) ? 0.0 :
 								linka.interval());
 
-							cieľ(linka, false);
-							maximálnaRýchlosť(50.0 * Systém.dilatácia);
+							// TODO del:
+							// cieľ(linka, false);
+							upravCieľPodľaLinky(true);
+
+							maximálnaRýchlosť(faktorMaximálnejRýchlosti *
+								Systém.dilatácia);
 							zrýchlenie(faktorZrýchlenia * Systém.dilatácia,
 								false);
 							rýchlosť(0, false);
@@ -245,6 +313,14 @@ public class Zákazník extends GRobot implements Činnosť
 	{
 		try { debugIn("(", this, ")");
 
+		++Systém.odídených;
+		if (null != vLinke)
+		{
+			Integer odišloVLinke = Systém.mapaOdchodov.get(vLinke);
+			if (null == odišloVLinke) odišloVLinke = 1; else ++odišloVLinke;
+			Systém.mapaOdchodov.put(vLinke, odišloVLinke);
+		}
+
 		vyraďZLinky();
 
 		zrýchlenie(0, false);
@@ -263,6 +339,7 @@ public class Zákazník extends GRobot implements Činnosť
 	{
 		try { debugIn("(", this, ")");
 
+		++Systém.vybavených;
 		vyraďZLinky();
 		deaktivuj();
 
