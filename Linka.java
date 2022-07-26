@@ -37,18 +37,24 @@ public class Linka extends GRobot implements Činnosť
 	// Kontextová ponuka:
 	private final KontextováPonuka kontextováPonuka;
 	private final KontextováPoložka položkaUpravPopis;
+
+	private final KontextováPoložka položkaZrušÚčel;
 	private final KontextováPoložka položkaZmeňNaEmitor;
 	private final KontextováPoložka položkaZmeňNaZásobník;
 	private final KontextováPoložka položkaZmeňNaČakáreň;
 	private final KontextováPoložka položkaZmeňNaDopravník;
 	private final KontextováPoložka položkaZmeňNaMenič;
 	private final KontextováPoložka položkaZmeňNaUvoľňovač;
-	private final KontextováPoložka položkaUpravKoeficienty;
-	private final KontextováPoložka položkaUpravVizuály;
-	private final KontextováPoložka položkaVymaž;
+
 	private final KontextováPoložka položkaZmeňNaElipsu;
 	private final KontextováPoložka položkaZmeňNaObdĺžnik;
 	private final KontextováPoložka položkaZmeňNaOblýObdĺžnik;
+
+	private final KontextováPoložka položkaUpravKoeficienty;
+	private final KontextováPoložka položkaUpravVizuály;
+	private final KontextováPoložka položkaPrepniInformácie;
+	// TODO del private final KontextováPoložka položkaPrepniObrys;
+	private final KontextováPoložka položkaVymaž;
 
 
 	// Verejné štatistiky:
@@ -62,8 +68,26 @@ public class Linka extends GRobot implements Činnosť
 		// implementované preto, aby sa v prípade úprav jednej linky ťahaním
 		// neposúvali ostatné linky.
 	private static int typÚprav = -1;
+		// (meniťŠírku = 0; točiť = 1; meniťRozmery = 2; meniťVýšku = 3;
+		// meniťMieruZaoblenia = 4)
 	private boolean označená = false;
 	private double čas = 0.0;
+	private int hladina = -1;
+		// TODO Zaraďovanie do hladín je dôležité pri triedení pred každým
+		// cyklom času. Prvé musia byť zaradené tie linky, ktoré sú v nižšej
+		// („skoršej“) hladine. Zaraďovanie do hladín prebieha vždy po vložení
+		// alebo odstránení linky alebo spojnice a to tak, že najprv sú
+		// hladiny všetkých liniek zresetované, potom sú vyhľadané a zaradené
+		// do zoznamu prvej hladiny všetky linky, ktoré nemajú žiadneho
+		// predchodcu (ak také jestvujú), do druhej hladiny sú zaradené všetky
+		// linky, ktoré sú nasledovníkmi prvej hladiny a neboli ešte označené
+		// a tak ďalej.
+		// 
+		// Otázka znie, či zoraďovať systémy od najnižšej hladiny po
+		// najvyššiu, alebo naopak. Prikláňam sa k prvému variantu, pretože
+		// tým vznikne vyššia šanca na zablokovanie prvého procesu druhým
+		// a tým vznikne vyššia šanca na odhalenie slabých miest simulovaného
+		// systému.
 
 	private String id = null; // Toto id je len pomocná informácia používaná
 		// pri zápise do a čítaní liniek zo súboru. Nemá žiadne iné použitie
@@ -79,6 +103,9 @@ public class Linka extends GRobot implements Činnosť
 	private int kapacita = 10;
 	private TvarLinky tvar = null;
 	private double mieraZaoblenia = 0.50;
+	private int početČiarObrysu = 1;
+	private double rozostupyČiarObrysu = 2.0;
+	private boolean zobrazInformácie = true;
 
 
 	// Evidencia zákazníkov:
@@ -96,8 +123,9 @@ public class Linka extends GRobot implements Činnosť
 
 		// Zostavenie kontextovej ponuky:
 		kontextováPonuka = new KontextováPonuka("—");
-		položkaUpravPopis = kontextováPonuka.pridajPoložku("Upraviť popis…");
+		položkaUpravPopis = kontextováPonuka.pridajPoložku("Uprav popis…");
 
+		položkaZrušÚčel = new KontextováPoložka("«žiadny»");
 		položkaZmeňNaEmitor = new KontextováPoložka("Emitor");
 		položkaZmeňNaZásobník = new KontextováPoložka("Zásobník");
 		položkaZmeňNaČakáreň = new KontextováPoložka("Čakáreň");
@@ -105,9 +133,9 @@ public class Linka extends GRobot implements Činnosť
 		položkaZmeňNaMenič = new KontextováPoložka("Menič");
 		položkaZmeňNaUvoľňovač = new KontextováPoložka("Uvoľňovač");
 
-		kontextováPonuka.pridajPonuku("Funkcia (účel)", položkaZmeňNaEmitor,
-			položkaZmeňNaZásobník, položkaZmeňNaČakáreň, položkaZmeňNaDopravník,
-			položkaZmeňNaMenič, položkaZmeňNaUvoľňovač);
+		kontextováPonuka.pridajPonuku("Funkcia (účel)", položkaZrušÚčel, null,
+			položkaZmeňNaEmitor, položkaZmeňNaZásobník, položkaZmeňNaČakáreň,
+			položkaZmeňNaDopravník, položkaZmeňNaMenič, položkaZmeňNaUvoľňovač);
 
 		položkaZmeňNaElipsu = new KontextováPoložka("Elipsa");
 		položkaZmeňNaObdĺžnik = new KontextováPoložka("Obdĺžnik");
@@ -117,13 +145,17 @@ public class Linka extends GRobot implements Činnosť
 			položkaZmeňNaObdĺžnik, položkaZmeňNaOblýObdĺžnik);
 
 		položkaUpravKoeficienty = kontextováPonuka.pridajPoložku(
-			"Upraviť koeficienty");
+			"Uprav koeficienty");
 		položkaUpravVizuály = kontextováPonuka.pridajPoložku(
-			"Upraviť vizuálne vlastnosti");
+			"Uprav vizuálne vlastnosti");
+		položkaPrepniInformácie = kontextováPonuka.pridajPoložku(
+			"Zobraz informácie");
+		/* TODO del položkaPrepniObrys = kontextováPonuka.pridajPoložku(
+			"Zobraz obrys"); */
 
 		kontextováPonuka.pridajOddeľovač();
 
-		položkaVymaž = kontextováPonuka.pridajPoložku("Vymazať");
+		položkaVymaž = kontextováPonuka.pridajPoložku("Vymaž");
 
 
 		// Reset – inicializácia:
@@ -136,6 +168,8 @@ public class Linka extends GRobot implements Činnosť
 
 	private void aktualizujKontextovúPonuku()
 	{
+		položkaZrušÚčel.ikona(null == účel ? Systém.ikonaOznačenia : null);
+
 		položkaZmeňNaEmitor.ikona(
 			ÚčelLinky.EMITOR == účel ? Systém.ikonaOznačenia : null);
 		položkaZmeňNaZásobník.ikona(
@@ -155,6 +189,11 @@ public class Linka extends GRobot implements Činnosť
 			TvarLinky.OBDĹŽNIK == tvar ? Systém.ikonaOznačenia : null);
 		položkaZmeňNaOblýObdĺžnik.ikona(
 			TvarLinky.OBLÝ_OBDĹŽNIK == tvar ? Systém.ikonaOznačenia : null);
+
+		položkaPrepniInformácie.ikona(
+			zobrazInformácie ? Systém.ikonaOznačenia : null);
+		/*položkaPrepniObrys.ikona(
+			zobrazObrys ? Systém.ikonaOznačenia : null); TODO del */
 	}
 
 	@Override public Spojnica spojnica(GRobot cieľ)
@@ -204,7 +243,14 @@ public class Linka extends GRobot implements Činnosť
 		popisPod = false;
 		čas = Systém.čas;
 		účel = null;
+		časovač = 1.0;
+		rozptyl = 0.0;
+		kapacita = 10;
 		tvar = null;
+		mieraZaoblenia = 0.5;
+		zobrazInformácie = true;
+		početČiarObrysu = 1;
+		rozostupyČiarObrysu = 2.0;
 		aktivuj(false);
 		zrušSpojnice();
 		vyraďZákazníkov();
@@ -215,8 +261,8 @@ public class Linka extends GRobot implements Činnosť
 	{
 		// Všetko, čo sa dá treba nastavovať cez metódy‼
 		skočNa(iná);
-		pomer(iná.pomer());
-		veľkosť(iná.veľkosť());
+		pomer(iná.pomer() < 0 ? 0 : iná.pomer());
+		veľkosť(iná.veľkosť() < 0 ? 0 : iná.veľkosť());
 		uhol(iná.uhol());
 		popis(iná.popis);
 		popisPod = iná.popisPod;
@@ -234,6 +280,9 @@ public class Linka extends GRobot implements Činnosť
 		// v zásade pokryté nižšie…
 		tvar = iná.tvar;
 		mieraZaoblenia(iná.mieraZaoblenia);
+		zobrazInformácie = iná.zobrazInformácie;
+		početČiarObrysu = iná.početČiarObrysu;
+		rozostupyČiarObrysu = iná.rozostupyČiarObrysu;
 
 		čas = iná.čas;
 
@@ -396,7 +445,7 @@ public class Linka extends GRobot implements Činnosť
 	{
 		Object[] údaje = {null == popis ? "" : popis, popisPod};
 
-		if (Svet.dialóg(popisyÚpravyPopisu, údaje, "Popis linky"))
+		if (dialóg(popisyÚpravyPopisu, údaje, "Popis linky"))
 		{
 			popis((String)údaje[0]);
 			popisPod = (Boolean)údaje[1];
@@ -458,8 +507,7 @@ public class Linka extends GRobot implements Činnosť
 			Object[] údaje = new Object[] {zlúčeniePopisov.toString(),
 				priemerUmiestnenia > 0.5 ? true : false};
 
-			if (Svet.dialóg(popisyÚpravyPopisuOznačených, údaje,
-				"Popis liniek"))
+			if (dialóg(popisyÚpravyPopisuOznačených, údaje, "Popis liniek"))
 			{
 				for (int i = 0; i < n; ++i)
 				{
@@ -470,6 +518,39 @@ public class Linka extends GRobot implements Činnosť
 						linka.popisPod = (Boolean)údaje[1];
 					}
 				}
+			}
+		}
+	}
+
+
+	public void zrušÚčel()
+	{
+		účel(null);
+	}
+
+	public static void zrušÚčely()
+	{
+		int početOznačených = početOznačených();
+		if (0 == početOznačených)
+			varovanie("Nie sú označené žiadne linky.",
+				"Zrušenie účelov liniek");
+		else if (1 == početOznačených)
+		{
+			for (Linka linka : linky)
+				if (linka.aktívny() && linka.označená())
+				{
+					linka.zrušÚčel();
+					break;
+				}
+		}
+		else
+		{
+			int n = linky.size();
+			for (int i = 0; i < n; ++i)
+			{
+				Linka linka = linky.get(i);
+				if (linka.aktívny() && linka.označená())
+					linka.zrušÚčel();
 			}
 		}
 	}
@@ -747,7 +828,7 @@ public class Linka extends GRobot implements Činnosť
 
 	public void zmeňNaOblýObdĺžnik()
 	{
-		zaoblenie(veľkosť() * mieraZaoblenia);
+		zaoblenie(min(výška(), šírka()) * mieraZaoblenia);
 		tvar = TvarLinky.OBLÝ_OBDĹŽNIK;
 		aktualizujKontextovúPonuku();
 		aktualizujSpojnice();
@@ -781,6 +862,170 @@ public class Linka extends GRobot implements Činnosť
 	}
 
 
+	public static void prepniInformácieOznačených()
+	{
+		int početOznačených = početOznačených();
+		if (0 == početOznačených)
+			varovanie("Nie sú označené žiadne linky.",
+				"Prepnutie informácií pri označených linkách");
+		else if (1 == početOznačených)
+		{
+			for (Linka linka : linky)
+				if (linka.aktívny() && linka.označená())
+				{
+					linka.prepniZobrazenieInformácií();
+					break;
+				}
+		}
+		else
+		{
+			int n = linky.size();
+			for (int i = 0; i < n; ++i)
+			{
+				Linka linka = linky.get(i);
+				if (linka.aktívny() && linka.označená())
+					linka.prepniZobrazenieInformácií();
+			}
+		}
+	}
+
+	public static void skryInformácieOznačených()
+	{
+		int početOznačených = početOznačených();
+		if (0 == početOznačených)
+			varovanie("Nie sú označené žiadne linky.",
+				"Prepnutie informácií pri označených linkách");
+		else if (1 == početOznačených)
+		{
+			for (Linka linka : linky)
+				if (linka.aktívny() && linka.označená())
+				{
+					linka.zobrazInformácie(false);
+					break;
+				}
+		}
+		else
+		{
+			int n = linky.size();
+			for (int i = 0; i < n; ++i)
+			{
+				Linka linka = linky.get(i);
+				if (linka.aktívny() && linka.označená())
+					linka.zobrazInformácie(false);
+			}
+		}
+	}
+
+	public static void zobrazInformácieOznačených()
+	{
+		int početOznačených = početOznačených();
+		if (0 == početOznačených)
+			varovanie("Nie sú označené žiadne linky.",
+				"Prepnutie informácií pri označených linkách");
+		else if (1 == početOznačených)
+		{
+			for (Linka linka : linky)
+				if (linka.aktívny() && linka.označená())
+				{
+					linka.zobrazInformácie(true);
+					break;
+				}
+		}
+		else
+		{
+			int n = linky.size();
+			for (int i = 0; i < n; ++i)
+			{
+				Linka linka = linky.get(i);
+				if (linka.aktívny() && linka.označená())
+					linka.zobrazInformácie(true);
+			}
+		}
+	}
+
+
+	/* TODO del public static void prepniObrysOznačených()
+	{
+		int početOznačených = početOznačených();
+		if (0 == početOznačených)
+			varovanie("Nie sú označené žiadne linky.",
+				"Prepnutie obrysov pri označených linkách");
+		else if (1 == početOznačených)
+		{
+			for (Linka linka : linky)
+				if (linka.aktívny() && linka.označená())
+				{
+					linka.prepniZobrazenieObrysu();
+					break;
+				}
+		}
+		else
+		{
+			int n = linky.size();
+			for (int i = 0; i < n; ++i)
+			{
+				Linka linka = linky.get(i);
+				if (linka.aktívny() && linka.označená())
+					linka.prepniZobrazenieObrysu();
+			}
+		}
+	}*/
+
+	/* TODO del public static void skryObrysOznačených()
+	{
+		int početOznačených = početOznačených();
+		if (0 == početOznačených)
+			varovanie("Nie sú označené žiadne linky.",
+				"Prepnutie obrysov pri označených linkách");
+		else if (1 == početOznačených)
+		{
+			for (Linka linka : linky)
+				if (linka.aktívny() && linka.označená())
+				{
+					linka.zobrazObrys(false);
+					break;
+				}
+		}
+		else
+		{
+			int n = linky.size();
+			for (int i = 0; i < n; ++i)
+			{
+				Linka linka = linky.get(i);
+				if (linka.aktívny() && linka.označená())
+					linka.zobrazObrys(false);
+			}
+		}
+	}*/
+
+	/* TODO del public static void zobrazObrysOznačených()
+	{
+		int početOznačených = početOznačených();
+		if (0 == početOznačených)
+			varovanie("Nie sú označené žiadne linky.",
+				"Prepnutie obrysov pri označených linkách");
+		else if (1 == početOznačených)
+		{
+			for (Linka linka : linky)
+				if (linka.aktívny() && linka.označená())
+				{
+					linka.zobrazObrys(true);
+					break;
+				}
+		}
+		else
+		{
+			int n = linky.size();
+			for (int i = 0; i < n; ++i)
+			{
+				Linka linka = linky.get(i);
+				if (linka.aktívny() && linka.označená())
+					linka.zobrazObrys(true);
+			}
+		}
+	}*/
+
+
 	private final static String[][] popisyKoeficientov = new String[][]
 		{
 			// Časovač je intervalom produkcie zákazníkov pre emitor,
@@ -798,30 +1043,36 @@ public class Linka extends GRobot implements Činnosť
 		{
 			Object[] údaje = {new Double(kapacita)};
 
-			if (Svet.dialóg(popisyKoeficientov[1], údaje, "Vlastnosti linky"))
+			if (dialóg(popisyKoeficientov[1], údaje, "Vlastnosti linky"))
 			{
-				kapacita = ((Double)údaje[0]).intValue();
+				if (!Double.isNaN((Double)údaje[0]))
+					kapacita = ((Double)údaje[0]).intValue();
 			}
 		}
-		else if (ÚčelLinky.ČAKÁREŇ == účel)
+		else if (null == účel || ÚčelLinky.ČAKÁREŇ == účel)
 		{
 			Object[] údaje = {časovač, rozptyl, new Double(kapacita)};
 
-			if (Svet.dialóg(popisyKoeficientov[2], údaje, "Vlastnosti linky"))
+			if (dialóg(popisyKoeficientov[2], údaje, "Vlastnosti linky"))
 			{
-				časovač = (Double)údaje[0];
-				rozptyl = (Double)údaje[1];
-				kapacita = ((Double)údaje[2]).intValue();
+				if (!Double.isNaN((Double)údaje[0]))
+					časovač = (Double)údaje[0];
+				if (!Double.isNaN((Double)údaje[1]))
+					rozptyl = (Double)údaje[1];
+				if (!Double.isNaN((Double)údaje[2]))
+					kapacita = ((Double)údaje[2]).intValue();
 			}
 		}
 		else
 		{
 			Object[] údaje = {časovač, rozptyl};
 
-			if (Svet.dialóg(popisyKoeficientov[0], údaje, "Vlastnosti linky"))
+			if (dialóg(popisyKoeficientov[0], údaje, "Vlastnosti linky"))
 			{
-				časovač = (Double)údaje[0];
-				rozptyl = (Double)údaje[1];
+				if (!Double.isNaN((Double)údaje[0]))
+					časovač = (Double)údaje[0];
+				if (!Double.isNaN((Double)údaje[1]))
+					rozptyl = (Double)údaje[1];
 			}
 		}
 	}
@@ -829,10 +1080,15 @@ public class Linka extends GRobot implements Činnosť
 	private final static String[][] popisyKoeficientovOznačených =
 		new String[][]
 		{
-			{"Časovače označených liniek:",
-				"Rozptyly označených liniek:"},
+			{"<html><i>Poznámka: Ak chcete niektorý spoločný parameter " +
+				"ignorovať<br />(nenastaviť), údaj vymažte a nechajte " +
+				"políčko prázdne.</i><br /> <br />Časovače označených " +
+				"liniek:</html>", "Rozptyly označených liniek:"},
 			{"Kapacity označených liniek:"},
-			{"Časovače označených liniek (okrem zásobníkov):",
+			{"<html><i>Poznámka: Ak chcete niektorý spoločný parameter " +
+				"ignorovať<br />(nenastaviť), údaj vymažte a nechajte " +
+				"políčko prázdne.</i><br /> <br />Časovače označených " +
+				"liniek (okrem zásobníkov):</html>",
 				"Rozptyly označených liniek (okrem zásobníkov):",
 				"Kapacity označených liniek (len pre zásobníky):"}
 		};
@@ -862,7 +1118,8 @@ public class Linka extends GRobot implements Činnosť
 				if (linka.aktívny() && linka.označená())
 				{
 					if (ÚčelLinky.ZÁSOBNÍK == linka.účel) typ |= 2;
-					else if (ÚčelLinky.ČAKÁREŇ == linka.účel) typ |= 3;
+					else if (null == linka.účel ||
+						ÚčelLinky.ČAKÁREŇ == linka.účel) typ |= 3;
 					else typ |= 1;
 
 					priemery[0] += linka.časovač;
@@ -897,7 +1154,7 @@ public class Linka extends GRobot implements Činnosť
 				údaje = new Object[] {priemery[0], priemery[1], priemery[2]};
 			}
 
-			if (Svet.dialóg(popisyKoeficientovOznačených[typ], údaje,
+			if (dialóg(popisyKoeficientovOznačených[typ], údaje,
 				"Vlastnosti liniek")) switch (typ)
 			{
 			case 0:
@@ -906,8 +1163,10 @@ public class Linka extends GRobot implements Činnosť
 					Linka linka = linky.get(i);
 					if (linka.aktívny() && linka.označená())
 					{
-						linka.časovač = (Double)údaje[0];
-						linka.rozptyl = (Double)údaje[1];
+						if (!Double.isNaN((Double)údaje[0]))
+							linka.časovač = (Double)údaje[0];
+						if (!Double.isNaN((Double)údaje[1]))
+							linka.rozptyl = (Double)údaje[1];
 					}
 				}
 				break;
@@ -918,7 +1177,8 @@ public class Linka extends GRobot implements Činnosť
 					Linka linka = linky.get(i);
 					if (linka.aktívny() && linka.označená())
 					{
-						linka.kapacita = ((Double)údaje[0]).intValue();
+						if (!Double.isNaN((Double)údaje[0]))
+							linka.kapacita = ((Double)údaje[0]).intValue();
 					}
 				}
 				break;
@@ -929,9 +1189,12 @@ public class Linka extends GRobot implements Činnosť
 					Linka linka = linky.get(i);
 					if (linka.aktívny() && linka.označená())
 					{
-						linka.časovač = (Double)údaje[0];
-						linka.rozptyl = (Double)údaje[1];
-						linka.kapacita = ((Double)údaje[2]).intValue();
+						if (!Double.isNaN((Double)údaje[0]))
+							linka.časovač = (Double)údaje[0];
+						if (!Double.isNaN((Double)údaje[1]))
+							linka.rozptyl = (Double)údaje[1];
+						if (!Double.isNaN((Double)údaje[2]))
+							linka.kapacita = ((Double)údaje[2]).intValue();
 					}
 				}
 			}
@@ -942,25 +1205,38 @@ public class Linka extends GRobot implements Činnosť
 	private final static String[] popisyVizuálov = new String[]
 		{"Pomer šírky k výške:", "Veľkosť (výška):",
 		"Miera zaoblenia rohov (len pre oblý obdĺžnik):",
+		"Počet čiar obrysu (0 – n):", "Rozostupy medzi čiarami obrysu:",
 		"Uhol (pootočenie; 90° – zvislá poloha):"};
 
 	public void upravVizuály()
 	{
-		Object[] údaje = {pomer(), veľkosť(), mieraZaoblenia, uhol()};
+		Object[] údaje = {pomer(), veľkosť(), mieraZaoblenia,
+			new Double(početČiarObrysu), rozostupyČiarObrysu, uhol()};
 
-		if (Svet.dialóg(popisyVizuálov, údaje, "Vizuálne vlastnosti linky"))
+		if (dialóg(popisyVizuálov, údaje, "Vizuálne vlastnosti linky"))
 		{
-			pomer((Double)údaje[0]);
-			veľkosť((Double)údaje[1]);
-			mieraZaoblenia((Double)údaje[2]);
-			uhol((Double)údaje[3]);
+			if (!Double.isNaN((Double)údaje[0]))
+				pomer((Double)údaje[0] < 0 ? 0 : (Double)údaje[0]);
+			if (!Double.isNaN((Double)údaje[1]))
+				veľkosť((Double)údaje[1] < 0 ? 0 : (Double)údaje[1]);
+			if (!Double.isNaN((Double)údaje[2]))
+				mieraZaoblenia((Double)údaje[2]);
+			if (!Double.isNaN((Double)údaje[3]))
+				početČiarObrysu = ((Double)údaje[3]).intValue();
+			if (!Double.isNaN((Double)údaje[4]))
+				rozostupyČiarObrysu = (Double)údaje[4];
+			if (!Double.isNaN((Double)údaje[5]))
+				uhol((Double)údaje[5]);
 			aktualizujSpojnice();
 		}
 	}
 
 	private final static String[] popisyVizuálovOznačených = new String[]
-		{"Pomery šírok k výškam:", "Veľkosti (výšky):",
-		"Miery zaoblenia rohov (len pre oblé obdĺžniky):",
+		{"<html><i>Poznámka: Ak chcete niektorý spoločný parameter " +
+			"ignorovať<br />(nenastaviť), údaj vymažte a nechajte políčko " +
+			"prázdne.</i><br /> <br />Pomery šírok k výškam:</html>",
+		"Veľkosti (výšky):", "Miery zaoblenia rohov (len pre oblé obdĺžniky):",
+		"Počty čiar obrysov (0 – n):",
 		"Uhly (pootočenia; 90° – zvislá poloha):"};
 
 	public static void upravVizuályOznačených()
@@ -981,7 +1257,7 @@ public class Linka extends GRobot implements Činnosť
 		else
 		{
 			int n = linky.size(), nn = 0;
-			double[] priemery = {0.0, 0.0, 0.0, 0.0};
+			double[] priemery = {0.0, 0.0, 0.0, 0.0, 0.0};
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
@@ -990,7 +1266,9 @@ public class Linka extends GRobot implements Činnosť
 					priemery[0] += linka.pomer();
 					priemery[1] += linka.veľkosť();
 					priemery[2] += linka.mieraZaoblenia();
-					priemery[3] += linka.uhol();
+					priemery[3] += linka.početČiarObrysu;
+					priemery[4] += linka.rozostupyČiarObrysu;
+					priemery[5] += linka.uhol();
 					++nn;
 				}
 			}
@@ -998,12 +1276,14 @@ public class Linka extends GRobot implements Činnosť
 			priemery[0] /= nn; // pomer
 			priemery[1] /= nn; // veľkosť
 			priemery[2] /= nn; // miera zaoblenia
-			priemery[3] /= nn; // uhol
+			priemery[3] /= nn; // počet čiar obrysu
+			priemery[4] /= nn; // rozostupy čiar obrysu
+			priemery[5] /= nn; // uhol
 
 			Object[] údaje = new Object[] {priemery[0], priemery[1],
-				priemery[2], priemery[3]};
+				priemery[2], floor(priemery[3]), priemery[4], priemery[5]};
 
-			if (Svet.dialóg(popisyVizuálovOznačených, údaje,
+			if (dialóg(popisyVizuálovOznačených, údaje,
 				"Vizuálne vlastnosti označených liniek"))
 			{
 				for (int i = 0; i < n; ++i)
@@ -1011,10 +1291,21 @@ public class Linka extends GRobot implements Činnosť
 					Linka linka = linky.get(i);
 					if (linka.aktívny() && linka.označená())
 					{
-						linka.pomer((Double)údaje[0]);
-						linka.veľkosť((Double)údaje[1]);
-						linka.mieraZaoblenia((Double)údaje[2]);
-						linka.uhol((Double)údaje[3]);
+						if (!Double.isNaN((Double)údaje[0]))
+							linka.pomer((Double)údaje[0] < 0 ? 0 :
+								(Double)údaje[0]);
+						if (!Double.isNaN((Double)údaje[1]))
+							linka.veľkosť((Double)údaje[1] < 0 ? 0 :
+								(Double)údaje[1]);
+						if (!Double.isNaN((Double)údaje[2]))
+							linka.mieraZaoblenia((Double)údaje[2]);
+						if (!Double.isNaN((Double)údaje[3]))
+							linka.početČiarObrysu =
+								((Double)údaje[3]).intValue();
+						if (!Double.isNaN((Double)údaje[4]))
+							linka.rozostupyČiarObrysu = (Double)údaje[4];
+						if (!Double.isNaN((Double)údaje[5]))
+							linka.uhol((Double)údaje[5]);
 						linka.aktualizujSpojnice();
 					}
 				}
@@ -1109,12 +1400,73 @@ public class Linka extends GRobot implements Činnosť
 		return mieraZaoblenia;
 	}
 
+	private void aktualizujZaoblenie()
+	{
+		zaoblenie(TvarLinky.OBLÝ_OBDĹŽNIK == this.tvar ?
+			(min(výška(), šírka()) * mieraZaoblenia) : 0.0);
+	}
+
 	public void mieraZaoblenia(double mieraZaoblenia)
 	{
+		if (mieraZaoblenia < 0) mieraZaoblenia = 0;
 		this.mieraZaoblenia = mieraZaoblenia;
 		zaoblenie(TvarLinky.OBLÝ_OBDĹŽNIK == this.tvar ?
-			(veľkosť() * mieraZaoblenia) : 0.0);
+			(min(výška(), šírka()) * mieraZaoblenia) : 0.0);
 	}
+
+
+	// (Tieto dve metódy sú tu definované v podstate len kvôli úplnosti.
+	// Neráta sa s ich praktickým využitím.)
+	public int početČiarObrysu() { return početČiarObrysu; }
+	public void početČiarObrysu(int početČiarObrysu) {
+		this.početČiarObrysu = početČiarObrysu; }
+
+
+	// (Tieto dve metódy sú tu definované v podstate len kvôli úplnosti.
+	// Neráta sa s ich praktickým využitím.)
+	public double rozostupyČiarObrysu() { return rozostupyČiarObrysu; }
+	public void rozostupyČiarObrysu(double rozostupyČiarObrysu) {
+		this.rozostupyČiarObrysu = rozostupyČiarObrysu; }
+
+
+	public boolean zobrazInformácie()
+	{
+		return zobrazInformácie;
+	}
+
+	public void zobrazInformácie(boolean zobrazInformácie)
+	{
+		this.zobrazInformácie = zobrazInformácie;
+		aktualizujKontextovúPonuku();
+		žiadajPrekreslenie();
+	}
+
+	public void prepniZobrazenieInformácií()
+	{
+		zobrazInformácie = !zobrazInformácie;
+		aktualizujKontextovúPonuku();
+		žiadajPrekreslenie();
+	}
+
+
+	/* TODO del public boolean zobrazObrys()
+	{
+		return zobrazObrys;
+	}
+
+	public void zobrazObrys(boolean zobrazObrys)
+	{
+		this.zobrazObrys = zobrazObrys;
+		aktualizujKontextovúPonuku();
+		žiadajPrekreslenie();
+	}
+
+	public void prepniZobrazenieObrysu()
+	{
+		zobrazObrys = !zobrazObrys;
+		aktualizujKontextovúPonuku();
+		žiadajPrekreslenie();
+	}*/
 
 
 	public boolean označená()
@@ -1155,8 +1507,11 @@ public class Linka extends GRobot implements Činnosť
 			súbor.zapíšVlastnosť("tvar", tvar);
 			súbor.zapíšVlastnosť("pomer", pomer());
 			súbor.zapíšVlastnosť("veľkosť", veľkosť());
-			súbor.zapíšVlastnosť("mieraZaoblenia", mieraZaoblenia);
 			súbor.zapíšVlastnosť("uhol", uhol());
+			súbor.zapíšVlastnosť("mieraZaoblenia", mieraZaoblenia);
+			súbor.zapíšVlastnosť("početČiarObrysu", početČiarObrysu);
+			súbor.zapíšVlastnosť("rozostupyČiarObrysu", rozostupyČiarObrysu);
+			súbor.zapíšVlastnosť("zobrazInformácie", zobrazInformácie);
 		}
 		finally
 		{
@@ -1212,13 +1567,13 @@ public class Linka extends GRobot implements Činnosť
 			{
 				Double pomer = súbor.čítajVlastnosť("pomer", (Double)1.2);
 				pomer = null == pomer ? 1.2 : pomer;
-				pomer(pomer);
+				pomer(pomer < 0 ? 0 : pomer);
 			}
 
 			{
 				Double veľkosť = súbor.čítajVlastnosť("veľkosť", (Double)50.0);
 				veľkosť = null == veľkosť ? 50.0 : veľkosť;
-				veľkosť(veľkosť);
+				veľkosť(veľkosť < 0 ? 0 : veľkosť);
 			}
 
 			{
@@ -1243,6 +1598,24 @@ public class Linka extends GRobot implements Činnosť
 				Double hodnota = súbor.čítajVlastnosť(
 					"mieraZaoblenia", (Double)0.50);
 				mieraZaoblenia(null == hodnota ? 0.50 : hodnota);
+			}
+
+			{
+				Integer hodnota = súbor.čítajVlastnosť(
+					"početČiarObrysu", (Integer)1);
+				početČiarObrysu = null == hodnota ? 1 : hodnota;
+			}
+
+			{
+				Double hodnota = súbor.čítajVlastnosť(
+					"rozostupyČiarObrysu", (Double)2.0);
+				rozostupyČiarObrysu = null == hodnota ? 2.0 : hodnota;
+			}
+
+			{
+				Boolean hodnota = súbor.čítajVlastnosť(
+					"zobrazInformácie", (Boolean)true);
+				zobrazInformácie = null == hodnota ? true : hodnota;
 			}
 
 			čas = Systém.čas;
@@ -1377,29 +1750,46 @@ public class Linka extends GRobot implements Činnosť
 
 			preskočVpravo(šírka() / 2);
 			boolean meniťŠírku = myšVoŠtvorci(8);
-			odskoč(výška() / 2);
+			skoč(výška() / 2);
 			boolean točiť = myšVKruhu(8);
+			odskoč(výška());
+			boolean meniťRozmery = myšVoŠtvorci(8);
 			preskočVľavo(šírka() / 2);
 			boolean meniťVýšku = myšVoŠtvorci(8);
+
+			skoč(výška());
+			preskočVľavo((šírka() - min(výška(),
+				šírka()) * mieraZaoblenia) / 2);
+			boolean meniťMieruZaoblenia = myšVKruhu(8);
 
 			zaoblenieX(zx);
 			zaoblenieY(zy);
 			poloha(p);
 
-			if (meniťVýšku)
+			if (meniťRozmery) // <— sem
 			{
 				upravujeSa = this;
-				typÚprav = 2;
+				typÚprav = 2; // ^ pozri hore ^
 			}
-			else if (meniťŠírku)
+			else if (meniťVýšku) // <— sem
 			{
 				upravujeSa = this;
-				typÚprav = 0;
+				typÚprav = 3; // ^ pozri hore ^
 			}
-			else if (točiť)
+			else if (meniťŠírku) // <— sem
 			{
 				upravujeSa = this;
-				typÚprav = 1;
+				typÚprav = 0; // ^ pozri hore ^
+			}
+			else if (točiť) // <— sem
+			{
+				upravujeSa = this;
+				typÚprav = 1; // ^ pozri hore ^
+			}
+			else if (meniťMieruZaoblenia) // <— sem
+			{
+				upravujeSa = this;
+				typÚprav = 4; // ^ pozri hore ^
 			}
 			else ťaháSa = myšV() || (aktívny() && označená);
 		}
@@ -1415,16 +1805,20 @@ public class Linka extends GRobot implements Činnosť
 				Bod p2 = polohaMyši();
 				switch (typÚprav)
 				{
-				case 0:
+				case 0: // meniťŠírku
 					{
 						double vzdialenosť1 = vzdialenosťK(p1);
 						double vzdialenosť2 = vzdialenosťK(p2);
-						šírka(šírka() + 2 * (vzdialenosť2 - vzdialenosť1));
+						double nováŠírka = šírka() + 2 *
+							(vzdialenosť2 - vzdialenosť1);
+						if (nováŠírka < 0) nováŠírka = 0;
+						šírka(nováŠírka);
+						aktualizujZaoblenie();
 						aktualizujSpojnice();
 					}
 					break;
 
-				case 1:
+				case 1: // upravujeSa
 					{
 						double uhol1 = smerNa(p1);
 						double uhol2 = smerNa(p2);
@@ -1432,11 +1826,42 @@ public class Linka extends GRobot implements Činnosť
 					}
 					break;
 
-				case 2:
+				case 2: // meniťRozmery
+					{
+						p1.otoč(this, 90 - uhol());
+						p2.otoč(this, 90 - uhol());
+						double rozdielX = p2.getX() - p1.getX();
+						double rozdielY = p1.getY() - p2.getY();
+						double nováŠírka = šírka() + 2 * rozdielX;
+						double nováVýška = výška() + 2 * rozdielY;
+						if (nováŠírka < 0) nováŠírka = 0;
+						if (nováVýška < 0) nováVýška = 0;
+						rozmery(nováŠírka, nováVýška);
+						aktualizujZaoblenie();
+						aktualizujSpojnice();
+					}
+					break;
+
+				case 3: // meniťVýšku
 					{
 						double vzdialenosť1 = vzdialenosťK(p1);
 						double vzdialenosť2 = vzdialenosťK(p2);
-						výška(výška() + 2 * (vzdialenosť2 - vzdialenosť1));
+						double nováVýška = výška() + 2 *
+							(vzdialenosť2 - vzdialenosť1);
+						if (nováVýška < 0) nováVýška = 0;
+						výška(nováVýška);
+						aktualizujZaoblenie();
+						aktualizujSpojnice();
+					}
+					break;
+
+				case 4: // meniťMieruZaoblenia
+					{
+						p1.otoč(this, 90 - uhol());
+						p2.otoč(this, 90 - uhol());
+						double rozdielX = p2.getX() - p1.getX();
+						mieraZaoblenia(mieraZaoblenia() +
+							2 * rozdielX / min(výška(), šírka()));
 						aktualizujSpojnice();
 					}
 					break;
@@ -1446,16 +1871,21 @@ public class Linka extends GRobot implements Činnosť
 		else if (ťaháSa)
 		{
 			Bod p = Bod.rozdiel(polohaMyši(), poslednáPolohaMyši());
-			skoč(p.getX(), p.getY());
-			for (Zákazník zákazník : zákazníci)
+			posuňAjZákazníkov(p.getX(), p.getY());
+		}
+	}
+
+	public void posuňAjZákazníkov(double Δx, double Δy)
+	{
+		skoč(Δx, Δy);
+		for (Zákazník zákazník : zákazníci)
+		{
+			zákazník.skoč(Δx, Δy);
+			if (zákazník.smerujeDoCieľa())
 			{
-				zákazník.skoč(p.getX(), p.getY());
-				if (zákazník.smerujeDoCieľa())
-				{
-					Bod b = zákazník.cieľ();
-					b.posuň(p);
-					zákazník.upravCieľ(b);
-				}
+				Bod b = zákazník.cieľ();
+				b.posuň(Δx, Δy);
+				zákazník.upravCieľ(b);
 			}
 		}
 	}
@@ -1469,6 +1899,7 @@ public class Linka extends GRobot implements Činnosť
 	@Override public void voľbaKontextovejPoložky()
 	{
 		if (položkaUpravPopis.zvolená()) upravPopis();
+		else if (položkaZrušÚčel.zvolená()) zrušÚčel();
 		else if (položkaZmeňNaEmitor.zvolená()) zmeňNaEmitor();
 		else if (položkaZmeňNaZásobník.zvolená()) zmeňNaZásobník();
 		else if (položkaZmeňNaČakáreň.zvolená()) zmeňNaČakáreň();
@@ -1480,6 +1911,10 @@ public class Linka extends GRobot implements Činnosť
 		else if (položkaZmeňNaOblýObdĺžnik.zvolená()) zmeňNaOblýObdĺžnik();
 		else if (položkaUpravKoeficienty.zvolená()) upravKoeficienty();
 		else if (položkaUpravVizuály.zvolená()) upravVizuály();
+		else if (položkaPrepniInformácie.zvolená())
+			prepniZobrazenieInformácií();
+		/* TODO del else if (položkaPrepniObrys.zvolená())
+			prepniZobrazenieObrysu(); */
 		else if (položkaVymaž.zvolená()) vymaž();
 	}
 
@@ -1490,21 +1925,35 @@ public class Linka extends GRobot implements Činnosť
 
 		zaoblenie(0);
 		preskočVpravo(šírka() / 2);
-		if (this == upravujeSa && 0 == typÚprav)
+		if (this == upravujeSa && 0 == typÚprav) // meniťŠírku
 			farba(svetločervená); else farba(snehová);
 		vyplňŠtvorec(5); farba(f); kresliŠtvorec(5);
 
-		odskoč(výška() / 2);
-		if (this == upravujeSa && 1 == typÚprav)
+		skoč(výška() / 2);
+		if (this == upravujeSa && 1 == typÚprav) // točiť
 			farba(svetločervená); else farba(snehová);
 		kruh(5); farba(f); kružnica(5);
 
-		preskočVľavo(šírka() / 2);
-		if (this == upravujeSa && 2 == typÚprav)
+		odskoč(výška());
+		if (this == upravujeSa && 2 == typÚprav) // meniťRozmery
 			farba(svetločervená); else farba(snehová);
 		vyplňŠtvorec(5); farba(f); kresliŠtvorec(5);
 
+		preskočVľavo(šírka() / 2);
+		if (this == upravujeSa && 3 == typÚprav) // meniťVýšku
+			farba(svetločervená); else farba(snehová);
+		vyplňŠtvorec(5); farba(f); kresliŠtvorec(5);
+
+		skoč(výška());
+		preskočVľavo((šírka() - min(výška(), šírka()) * mieraZaoblenia) / 2);
+		if (this == upravujeSa && 4 == typÚprav) // meniťMieruZaoblenia
+			farba(svetločervená); else farba(snehová);
+		kruh(5); farba(f); kružnica(5);
+
 		poloha(p);
+
+		// TODO del
+		// text("veľ: " + F(veľkosť(), 2) + ";  pom: " + F(pomer(), 2) + ";  š×v: " + F(šírka(), 2) + "×" + F(výška(), 2));
 	}
 
 	@Override public void kresliTvar()
@@ -1533,25 +1982,35 @@ public class Linka extends GRobot implements Činnosť
 
 		if (null != tvar && TvarLinky.ELIPSA != tvar)
 		{
-			obdĺžnik();
+			double š = šírka() / 2, v = výška() / 2;
+			for (int i = 0; i < početČiarObrysu && š >= 0 && v >= 0;
+				++i, š -= rozostupyČiarObrysu, v -= rozostupyČiarObrysu)
+				obdĺžnik(š, v);
+
+			hrúbkaČiary(0.5);
 			if (označená)
 			{
-				obdĺžnik(šírka() / 2 + 2, výška() / 2 + 2);
+				obdĺžnik(šírka() / 2 + 2.5, výška() / 2 + 2.5);
 				kresliZnačkyÚprav();
 			}
 			else if (ťaháSa)
-				obdĺžnik(šírka() / 2 - 2, výška() / 2 - 2);
+				obdĺžnik(šírka() / 2 - 1.5, výška() / 2 - 1.5);
 		}
 		else
 		{
-			elipsa();
+			double š = šírka() / 2, v = výška() / 2;
+			for (int i = 0; i < početČiarObrysu && š >= 0 && v >= 0;
+				++i, š -= rozostupyČiarObrysu, v -= rozostupyČiarObrysu)
+				elipsa(š, v);
+
+			hrúbkaČiary(0.5);
 			if (označená)
 			{
-				elipsa(šírka() / 2 + 2, výška() / 2 + 2);
+				elipsa(šírka() / 2 + 2.5, výška() / 2 + 2.5);
 				kresliZnačkyÚprav();
 			}
 			else if (ťaháSa)
-				elipsa(šírka() / 2 - 2, výška() / 2 - 2);
+				elipsa(šírka() / 2 - 1.5, výška() / 2 - 1.5);
 		}
 
 		if (0 != časovač)
@@ -1593,14 +2052,14 @@ public class Linka extends GRobot implements Činnosť
 			}
 		}
 
-		// TODO dať vypnuteľné
+		if (zobrazInformácie)
 		{
 			farba(čierna);
 			skoč(10 + veľkosť() * pomer(), veľkosť() - výškaRiadka() / 2.0);
 
 			if (ÚčelLinky.ZÁSOBNÍK == účel || ÚčelLinky.ČAKÁREŇ == účel)
 			{
-				text("Obsadenosť: " + zákazníci.size(), KRESLI_PRIAMO);
+				text(S("Obsadenosť: ", zákazníci.size()), KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 			}
 			else
@@ -1608,62 +2067,73 @@ public class Linka extends GRobot implements Činnosť
 				int size = zákazníci.size();
 				switch (size)
 				{
-				case 0: text("Voľný", KRESLI_PRIAMO); break;
+				case 0: if (null == účel) skoč(0, výškaRiadka()); else
+					text("Voľný", KRESLI_PRIAMO); break;
 				case 1: text("Obsadený", KRESLI_PRIAMO); break;
-				default: text("Obsadenosť: " + size, KRESLI_PRIAMO);
+				default: text(S("Obsadenosť: ", size), KRESLI_PRIAMO);
 				}
 				skoč(0, -výškaRiadka());
 			}
 
-			if (ÚčelLinky.ZÁSOBNÍK == účel)
+			if (null == účel)
 			{
-				text("Kapacita: " + kapacita, KRESLI_PRIAMO);
+				text(S("Kapacita: ", kapacita), KRESLI_PRIAMO);
+				skoč(0, -výškaRiadka());
+
+				text(S("Časovač: ", F(časovač, 2),
+					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2))),
+					KRESLI_PRIAMO);
+				skoč(0, -výškaRiadka());
+			}
+			else if (ÚčelLinky.ZÁSOBNÍK == účel)
+			{
+				text(S("Kapacita: ", kapacita), KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 			}
 			else if (ÚčelLinky.ČAKÁREŇ == účel)
 			{
-				text("Kapacita: " + kapacita, KRESLI_PRIAMO);
+				text(S("Kapacita: ", kapacita), KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 
-				text("Trpezlivosť: " + F(časovač, 2) +
-					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2)),
+				text(S("Trpezlivosť: ", F(časovač, 2),
+					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2))),
 					KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 			}
 			else if (ÚčelLinky.DOPRAVNÍK == účel)
 			{
-				text("Doprava: " + F(časovač, 2) +
-					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2)),
+				text(S("Doprava: ", F(časovač, 2),
+					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2))),
 					KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 			}
 			else if (ÚčelLinky.EMITOR == účel)
 			{
-				text("Ďalší: " + F(čas, 3), KRESLI_PRIAMO);
+				text(S("Ďalší: ", F(čas, 3)), KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 
-				text("Interval: " + F(časovač, 2) +
-					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2)),
+				text(S("Interval: ", F(časovač, 2),
+					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2))),
 					KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 			}
 			else
 			{
-				text("Spracovanie: " + F(časovač, 2) +
-					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2)),
+				text(S("Spracovanie: ", F(časovač, 2),
+					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2))),
 					KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 			}
 
 			if (0 != odídených)
 			{
-				text("Odišlo nevybavených: " + odídených, KRESLI_PRIAMO);
+				text(S("Odišlo nevybavených: ", odídených), KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 			}
 
 			if (0 != vybavených)
 			{
-				text("Vybavených: " + vybavených, KRESLI_PRIAMO);
+				text(S("Vybavených: ", vybavených), KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 			}
 		}

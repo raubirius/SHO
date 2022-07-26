@@ -1,9 +1,0 @@
-Cena jednej licencie pre učiteľa:
-a = 13 480 * 1,21 * 0,040
-= 652,432
-
-cena štandardnej licencie je šesťnásobná
-79 980/13 480
-y = 5,933234421364985
-y * a
-= 3 871,032

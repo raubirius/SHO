@@ -353,14 +353,7 @@ public class Zákazník extends GRobot implements Činnosť
 		try { debugIn("(", this, ")");
 
 		++Systém.odídených;
-		if (null != vLinke)
-		{
-			// TODO del
-			// Integer odišloVLinke = Systém.mapaOdchodov.get(vLinke);
-			// if (null == odišloVLinke) odišloVLinke = 1; else ++odišloVLinke;
-			// Systém.mapaOdchodov.put(vLinke, odišloVLinke);
-			++vLinke.odídených;
-		}
+		if (null != vLinke) ++vLinke.odídených;
 
 		vyraďZLinky();
 
