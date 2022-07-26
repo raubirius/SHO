@@ -58,10 +58,6 @@ public class Linka extends GRobot implements Činnosť
 	private final KontextováPoložka položkaUpravKoeficienty;
 	private final KontextováPoložka položkaUpravVizuály;
 	private final KontextováPoložka položkaPrepniInformácie;
-	// TODO del
-	// private final KontextováPoložka položkaPrepniZarovnaniePolohy;
-	// private final KontextováPoložka položkaPrepniZarovnanieRozmerov;
-	// private final KontextováPoložka položkaPrepniZarovnanieUhla;
 	private final KontextováPoložka položkaVymaž;
 
 
@@ -120,13 +116,6 @@ public class Linka extends GRobot implements Činnosť
 	private double rozostupyČiarObrysu = 2.0;
 	private boolean zobrazInformácie = true;
 
-	// TODO del
-	// (Zarovnávanie je implementované tak, že sa vykonáva vždy pri
-	// prekreslení linky.)
-	// private boolean zarovnávajPolohu = false;
-	// private boolean zarovnávajRozmery = false;
-	// private boolean zarovnávajUhol = false;
-
 	// Evidencia zákazníkov:
 	private final Vector<Zákazník> zákazníci = new Vector<>();
 
@@ -183,14 +172,6 @@ public class Linka extends GRobot implements Činnosť
 		položkaPrepniInformácie = kontextováPonuka.pridajPoložku(
 			"Zobraz informácie");
 
-		// TODO del
-		// položkaPrepniZarovnaniePolohy = kontextováPonuka.pridajPoložku(
-		// 	"Zarovnávaj polohu");
-		// položkaPrepniZarovnanieRozmerov = kontextováPonuka.pridajPoložku(
-		// 	"Zarovnávaj rozmery");
-		// položkaPrepniZarovnanieUhla = kontextováPonuka.pridajPoložku(
-		// 	"Zarovnávaj pootočenie");
-
 		kontextováPonuka.pridajOddeľovač();
 
 		položkaVymaž = kontextováPonuka.pridajPoložku("Vymaž");
@@ -233,14 +214,6 @@ public class Linka extends GRobot implements Činnosť
 
 		položkaPrepniInformácie.ikona(zobrazInformácie ?
 			Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
-
-		// TODO del
-		// položkaPrepniZarovnaniePolohy.ikona(zarovnávajPolohu ?
-		// 	Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
-		// položkaPrepniZarovnanieRozmerov.ikona(zarovnávajRozmery ?
-		// 	Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
-		// položkaPrepniZarovnanieUhla.ikona(zarovnávajUhol ?
-		// 	Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
 	}
 
 	// Vytvorenie (alebo zrušenie) spojnice musí mať za následok preradenie
@@ -309,7 +282,6 @@ public class Linka extends GRobot implements Činnosť
 		názovTvaru = názov;
 		if (null == názovTvaru)
 		{
-			// veľkosťPodľaMierky();
 			mierka(1);
 			mierkaPomeru(1);
 			tvarTvaru = null;
@@ -332,13 +304,10 @@ public class Linka extends GRobot implements Činnosť
 				mierka(1);
 				mierkaPomeru(1);
 
-				// double šírkaLinky = šírka(); // TODO del (testy)
-				// double výškaLinky = výška();
-
 				double výškaTvaru = tvarTvaru.getBounds2D().getHeight();
 				double šírkaTvaru = tvarTvaru.getBounds2D().getWidth();
 
-				// TODO:
+				// TODO (move):
 				// 
 				// ✓ Umožniť pri výbere tvaru zvoliť, či sa má veľkosť
 				//   linky prispôsobiť rozmerom nového tvaru (predvolene
@@ -348,15 +317,6 @@ public class Linka extends GRobot implements Činnosť
 				mierkaPomeru(šírka() / (šírkaTvaru * mierka()));
 				if (prispôsobPomer)
 					šírka(šírkaTvaru * mierka());
-
-				// TODO del (testy)
-				// mierkaPomeru(2);
-				/*System.out.println("mierka(): " + mierka());
-				System.out.println("šírka(): " + šírka() + " alebo " + šírkaLinky + "?");
-				System.out.println("šírkaTvaru: " + šírkaTvaru);
-				System.out.println("šírkaTvaru v mierke?: " + šírkaTvaru * mierka());
-				System.out.println("mierkaPomeru(): " + mierkaPomeru());*/
-
 				Tvar.eviduj(názovTvaru);
 			}
 		}
@@ -385,12 +345,6 @@ public class Linka extends GRobot implements Činnosť
 		preevidujTvar(null);
 		mieraZaoblenia(0.5);
 		zobrazInformácie = true;
-
-		// TODO del
-		// zarovnávajPolohu = false;
-		// zarovnávajRozmery = false;
-		// zarovnávajUhol = false;
-
 		početČiarObrysu = 1;
 		rozostupyČiarObrysu = 2.0;
 		aktivuj(false);
@@ -426,12 +380,6 @@ public class Linka extends GRobot implements Činnosť
 		if (null == názovTvaru) režimKreslenia = null;
 		mieraZaoblenia(iná.mieraZaoblenia);
 		zobrazInformácie = iná.zobrazInformácie;
-
-		// TODO del
-		// zarovnávajPolohu = iná.zarovnávajPolohu;
-		// zarovnávajRozmery = iná.zarovnávajRozmery;
-		// zarovnávajUhol = iná.zarovnávajUhol;
-
 		početČiarObrysu = iná.početČiarObrysu;
 		rozostupyČiarObrysu = iná.rozostupyČiarObrysu;
 
@@ -1143,25 +1091,16 @@ public class Linka extends GRobot implements Činnosť
 	private static VoľbaTvaru vyberTvar(String názov, byte transformácie,
 		String[] popisyVoľbyTvaru, String titulok)
 	{
-		// TODO del – dočasné riešenie (zadaním názvu tvaru)
-		/*String zoznam0[] = Tvar.zoznam();
-		String info = "<html><i>Toto je dočasné riešenie výberu tvaru." +
-			"<br />Zadajte jeden z nasledujúcich názvov:</i><br />";*/
-
 		Zoznam<Obrázok> zoznam = new Zoznam<>(Tvar.obrázokPodľaNázvu(názov));
 		Tvar.naplňZoznamObrázkov(zoznam);
 
-		// TODO:
+		// TODO (move):
 		// ✓ Dať možnosť voľby prispôsobenia pomeru.
-		// • Dať možnosť zrkadlového kreslenia tvaru.
-		// • Načítať a označiť aktuálnu voľbu tvaru a zrkadlenia.
+		// ✓ Dať možnosť zrkadlového kreslenia tvaru.
+		// ✓ Načítať a označiť aktuálnu voľbu tvaru a zrkadlenia.
 
 		Boolean zrkadliHorizontálne = 0 != (transformácie & 1);
 		Boolean zrkadliVertikálne   = 0 != (transformácie & 2);
-
-		// TODO del (testy)
-		// System.out.println("zrkadliHorizontálne: " + zrkadliHorizontálne);
-		// System.out.println("zrkadliVertikálne: " + zrkadliVertikálne);
 
 		RotáciaTvaru kvadrant = RotáciaTvaru.Q0;
 		switch (transformácie & 12)
@@ -1174,8 +1113,6 @@ public class Linka extends GRobot implements Činnosť
 		Object[] údaje = {zoznam, zrkadliHorizontálne, zrkadliVertikálne,
 			kvadrant, Boolean.TRUE};
 
-		// TODO — rozbi „na drobné“
-
 		String zvolený = null;
 		boolean pomer = true;
 
@@ -1185,9 +1122,6 @@ public class Linka extends GRobot implements Činnosť
 				((null != údaje[1] && (Boolean)údaje[1]) ? 1 : 0) |
 				((null != údaje[2] && (Boolean)údaje[2]) ? 2 : 0));
 
-			// TODO del (testy)
-			// System.out.println("transformácie: " + transformácie);
-
 			switch ((RotáciaTvaru)údaje[3])
 			{
 			case Q1: transformácie |= 4; break;
@@ -1195,37 +1129,9 @@ public class Linka extends GRobot implements Činnosť
 			case Q3: transformácie |= 12; break;
 			}
 
-			// TODO del (testy)
-			// System.out.println("transformácie: " + transformácie);
-
 			zvolený = Tvar.názovPodľaObrázka(zoznam.daj(0));
-
 			pomer = null == údaje[4] || (Boolean)údaje[4];
 		}
-
-		// TODO del – dočasné riešenie (zadaním názvu tvaru)
-		/*boolean prvý = true; int i = 0;
-		for (String položka : zoznam0)
-		{
-			if (prvý)
-			{
-				prvý = false;
-				info += položka;
-			}
-			else
-			{
-				if (0 == i % 5)
-					info += ",<br />" + položka;
-				else
-					info += ", " + položka;
-			}
-			++i;
-		}
- 
-		info += ".</html>";
-
-		String zvolený = zadajReťazec(info,
-			"Výber tvaru (dočasné riešenie)");*/
 
 		zoznam.vymaž(); zoznam = null;
 		return new VoľbaTvaru(zvolený, transformácie, pomer);
@@ -1895,67 +1801,6 @@ public class Linka extends GRobot implements Činnosť
 	}
 
 
-	// TODO del
-	/*public boolean zarovnávajPolohu()
-	{
-		return zarovnávajPolohu;
-	}
-
-	public void zarovnávajPolohu(boolean zarovnávajPolohu)
-	{
-		this.zarovnávajPolohu = zarovnávajPolohu;
-		aktualizujKontextovúPonuku();
-		žiadajPrekreslenie();
-	}
-
-	public void prepniZarovnávaniePolohy()
-	{
-		zarovnávajPolohu = !zarovnávajPolohu;
-		aktualizujKontextovúPonuku();
-		žiadajPrekreslenie();
-	}
-
-
-	public boolean zarovnávajRozmery()
-	{
-		return zarovnávajRozmery;
-	}
-
-	public void zarovnávajRozmery(boolean zarovnávajRozmery)
-	{
-		this.zarovnávajRozmery = zarovnávajRozmery;
-		aktualizujKontextovúPonuku();
-		žiadajPrekreslenie();
-	}
-
-	public void prepniZarovnávanieRozmerov()
-	{
-		zarovnávajRozmery = !zarovnávajRozmery;
-		aktualizujKontextovúPonuku();
-		žiadajPrekreslenie();
-	}
-
-
-	public boolean zarovnávajUhol()
-	{
-		return zarovnávajUhol;
-	}
-
-	public void zarovnávajUhol(boolean zarovnávajUhol)
-	{
-		this.zarovnávajUhol = zarovnávajUhol;
-		aktualizujKontextovúPonuku();
-		žiadajPrekreslenie();
-	}
-
-	public void prepniZarovnávanieUhla()
-	{
-		zarovnávajUhol = !zarovnávajUhol;
-		aktualizujKontextovúPonuku();
-		žiadajPrekreslenie();
-	}*/
-
-
 	public boolean označená()
 	{
 		return označená;
@@ -1995,11 +1840,6 @@ public class Linka extends GRobot implements Činnosť
 			súbor.zapíšVlastnosť("režimKreslenia", režimKreslenia);
 			súbor.zapíšVlastnosť("názovTvaru", názovTvaru);
 			súbor.zapíšVlastnosť("transformácieTvaru", transformácieTvaru);
-
-			// TODO del (testy)
-			// System.out.println("Zapíš transformácie tvaru: " +
-			// 	transformácieTvaru);
-
 			súbor.zapíšVlastnosť("pomer", pomer());
 			súbor.zapíšVlastnosť("veľkosť", veľkosť());
 			súbor.zapíšVlastnosť("uhol", uhol());
@@ -2007,11 +1847,6 @@ public class Linka extends GRobot implements Činnosť
 			súbor.zapíšVlastnosť("početČiarObrysu", početČiarObrysu);
 			súbor.zapíšVlastnosť("rozostupyČiarObrysu", rozostupyČiarObrysu);
 			súbor.zapíšVlastnosť("zobrazInformácie", zobrazInformácie);
-
-			// TODO del
-			// súbor.zapíšVlastnosť("zarovnávajPolohu", zarovnávajPolohu);
-			// súbor.zapíšVlastnosť("zarovnávajRozmery", zarovnávajRozmery);
-			// súbor.zapíšVlastnosť("zarovnávajUhol", zarovnávajUhol);
 		}
 		finally
 		{
@@ -2090,10 +1925,6 @@ public class Linka extends GRobot implements Činnosť
 					"transformácieTvaru", (int)transformácieTvaru);
 				transformácieTvaru = null == transformuj ? (byte)0 :
 					transformuj.byteValue();
-
-				// TODO del (testy)
-				// System.out.println("Čítaj transformácie tvaru: " +
-				// 	transformácieTvaru);
 			}
 
 			{
@@ -2113,14 +1944,8 @@ public class Linka extends GRobot implements Činnosť
 
 				case "VLASTNÝ_TVAR":
 					this.režimKreslenia = RežimKresleniaLinky.VLASTNÝ_TVAR;
-
 					preevidujTvar(súbor.čítajVlastnosť(
 						"názovTvaru", (String)null), false, transformácieTvaru);
-
-					// TODO del (testy)
-					// System.out.println("Použi transformácie tvaru: " +
-					// 	transformácieTvaru);
-
 					if (null == názovTvaru) this.režimKreslenia = null;
 					break;
 
@@ -2151,25 +1976,6 @@ public class Linka extends GRobot implements Činnosť
 					"zobrazInformácie", (Boolean)true);
 				zobrazInformácie = null == hodnota ? true : hodnota;
 			}
-
-			// TODO del
-			/*{
-				Boolean hodnota = súbor.čítajVlastnosť(
-					"zarovnávajPolohu", (Boolean)false);
-				zarovnávajPolohu = null == hodnota ? false : hodnota;
-			}
-
-			{
-				Boolean hodnota = súbor.čítajVlastnosť(
-					"zarovnávajRozmery", (Boolean)false);
-				zarovnávajRozmery = null == hodnota ? false : hodnota;
-			}
-
-			{
-				Boolean hodnota = súbor.čítajVlastnosť(
-					"zarovnávajUhol", (Boolean)false);
-				zarovnávajUhol = null == hodnota ? false : hodnota;
-			}*/
 
 			označená = false;
 			bliká = 0;
@@ -2476,62 +2282,8 @@ public class Linka extends GRobot implements Činnosť
 	@Override public void uvoľnenieTlačidlaMyši()
 	{
 		if (neaktívny()) return;
-
-		if (this == upravujeSa)
-		{
-			/* TODO del switch (typÚprav)
-			{
-			case 0: // meniťŠírku
-				if (Systém.prichytávajKRozmeru())
-				{
-					double Πšírka = Systém.mriežkaŠírka();
-					šírka(floor(šírka() / (2 * Πšírka)) * (2 * Πšírka));
-					aktualizujZaoblenie(); aktualizujSpojnice();
-				}
-				break;
-
-			case 1: // upravujeSa
-				if (Systém.prichytávajKUhlu())
-					uhol(floor(uhol() / Systém.mriežkaUhol()) *
-						Systém.mriežkaUhol());
-				break;
-
-			case 2: // meniťRozmery
-				if (Systém.prichytávajKRozmeru())
-				{
-					double Πšírka = Systém.mriežkaŠírka();
-					double Πvýška = Systém.mriežkaVýška();
-
-					rozmery(floor(šírka() / (2 * Πšírka)) * (2 * Πšírka),
-						floor(výška() / (2 * Πvýška)) * (2 * Πvýška));
-
-					aktualizujZaoblenie();
-					aktualizujSpojnice();
-				}
-				break;
-
-			case 3: // meniťVýšku
-				if (Systém.prichytávajKRozmeru())
-				{
-					double Πvýška = Systém.mriežkaVýška();
-					výška(floor(výška() / (2 * Πvýška)) * (2 * Πvýška));
-					aktualizujZaoblenie(); aktualizujSpojnice();
-				}
-				break;
-			}*/
-			upravujeSa = null;
-		}
-		else if (ťaháSa)
-		{
-			/* TODO del if (Systém.prichytávajKPolohe())
-			{
-				double Πx = Systém.mriežkaX(), Πy = Systém.mriežkaY();
-				posuňAjZákazníkov(floor(polohaX() / Πx) * Πx - polohaX(),
-					floor(polohaY() / Πy) * Πy - polohaY());
-			}*/
-
-			ťaháSa = false;
-		}
+		if (this == upravujeSa) upravujeSa = null;
+		else if (ťaháSa) ťaháSa = false;
 	}
 
 	@Override public void voľbaKontextovejPoložky()
@@ -2554,15 +2306,6 @@ public class Linka extends GRobot implements Činnosť
 		else if (položkaUpravVizuály.zvolená()) upravVizuály();
 		else if (položkaPrepniInformácie.zvolená())
 			prepniZobrazenieInformácií();
-
-		// TODO del
-		// else if (položkaPrepniZarovnaniePolohy.zvolená())
-		// 	prepniZarovnávaniePolohy();
-		// else if (položkaPrepniZarovnanieRozmerov.zvolená())
-		// 	prepniZarovnávanieRozmerov();
-		// else if (položkaPrepniZarovnanieUhla.zvolená())
-		// 	prepniZarovnávanieUhla();
-
 		else if (položkaVymaž.zvolená()) vymaž();
 	}
 
@@ -2601,10 +2344,6 @@ public class Linka extends GRobot implements Činnosť
 		poloha(p);
 	}
 
-	// TODO del – ďalšie testy
-	// private final static java.awt.Image testovacíObrázok =
-	// 	Obrázok.čítaj("vlastnýTvar.png");
-
 	@Override public void kresliTvar()
 	{
 		if (neaktívny()) return;
@@ -2616,44 +2355,6 @@ public class Linka extends GRobot implements Činnosť
 		// hnedá     – prepravuje zákazníkov medzi linkami
 		// oranžová  – transformuje (mení, spracúva) zákazníkov
 		// zelená    – uvoľňuje zákazníkov (definitívne ich vybavuje)
-
-		// TODO — odstrániť ten nezmysel so zarovnávaním, to bola slepá ulička
-		/*
-		// Zálohy pred zarovnávaním:
-		Poloha poloha = poloha(); double veľkosť = veľkosť(),
-		pomer = pomer(), uhol = uhol(); try {
-
-			// Zarovnania:
-
-			if (zarovnávajPolohu)
-			{
-				// TODO (test)
-				double Πx = mriežkaX(), Πy = mriežkaY();
-				skočNa(floor(polohaX() / Πx) * Πx,
-					floor(polohaY() / Πy) * Πy);
-			}
-
-			if (zarovnávajRozmery)
-			{
-				// TODO (test)
-				double Πšírka = mriežkaŠírka(), Πvýška = mriežkaVýška();
-				rozmery(
-					floor(šírka() / (2 * Πšírka)) * (2 * Πšírka),
-					floor(výška() / (2 * Πvýška)) * (2 * Πvýška))
-				if (šírka() != poslednáŠírka || výška() != poslednáVýška)
-				{
-					aktualizujZaoblenie();
-					aktualizujSpojnice();
-					poslednáŠírka = šírka();
-					poslednáVýška = výška();
-				}
-			}
-
-			if (zarovnávajUhol)
-			{
-				// TODO (test)
-				double Πuhol = mriežkaUhol();
-			}*/
 
 		// Kreslenie základného tvaru:
 		if (0 == bliká || 0 == (bliká / 2) % 2)
@@ -2692,9 +2393,6 @@ public class Linka extends GRobot implements Činnosť
 								v -= (2 * rozostupyČiarObrysu))
 							{
 								kresliTvar(tvarTvaru, true);
-								// trojzubec(); // TODO del (testovanie)
-								// obrázok("vlastnýTvar.png");
-								// obrázok(testovacíObrázok);
 								rozmery(š, v);
 							}
 						}
@@ -2707,9 +2405,6 @@ public class Linka extends GRobot implements Činnosť
 					else if (1 == početČiarObrysu)
 					{
 						kresliTvar(tvarTvaru, true);
-						// trojzubec(); // TODO del (testovanie)
-						// obrázok("vlastnýTvar.png");
-						// obrázok(testovacíObrázok);
 					}
 				}
 				else
@@ -2818,10 +2513,6 @@ public class Linka extends GRobot implements Činnosť
 
 		skoč(10 + veľkosť() * pomer(), veľkosť() - výškaRiadka() / 2.0);
 
-			/* farba(fialová); // TODO del (ladenie)
-			text(S("Bliká: ", bliká), KRESLI_PRIAMO);
-			skoč(0, -1 * výškaRiadka()); */
-
 		if (zobrazTypy || zobrazHladiny)
 		{
 			farba(červená);
@@ -2927,10 +2618,6 @@ public class Linka extends GRobot implements Činnosť
 		}
 
 		} finally { písmo(písmo); }}
-
-		// TODO — odstrániť ten nezmysel so zarovnávaním, to bola slepá ulička
-		/*// Návrat do stavu pred zarovnaním:
-		} finally { veľkosť(veľkosť); pomer(pomer); uhol(uhol); }*/
 	}
 
 	@Override public void aktivácia()

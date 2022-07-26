@@ -117,7 +117,6 @@ public class Systém extends GRobot
 
 	private static boolean zobrazInformácie = true;
 	private static boolean zobrazMriežku = false;
-	// private static boolean prichytávajKMriežkam = false; TODO del
 
 	private static double mriežkaX = 20.0, mriežkaY = 0.0;
 	private static double mriežkaŠírka = 20.0, mriežkaVýška = 0.0;
@@ -368,11 +367,6 @@ public class Systém extends GRobot
 			VK_K).príkaz(sizgridSelection);
 		pridajPoložkuPonuky("Zaokrúhli pootočenia označených",
 			VK_T).príkaz(anggridSelection);
-		/* TODO del položkaPrepniPrichytávanie = pridajPoložkuPonuky(
-			"Prepni prichytávanie k mriežkam", VK_C);
-		položkaPrepniPrichytávanie.príkaz(snapGrid);
-		položkaPrepniPrichytávanie.ikona(prichytávajKMriežkam ?
-			ikonaOznačenia : ikonaNeoznačenia); */
 		položkaPrepniMriežku = pridajPoložkuPonuky(
 			"Prepni zobrazenie mriežky", VK_M);
 		položkaPrepniMriežku.príkaz(toggleGrid);
@@ -647,11 +641,6 @@ public class Systém extends GRobot
 		žiadajPrekreslenie();
 	}
 
-	/* TODO del public static boolean prichytávajKPolohe()
-	{
-		return prichytávajKMriežkam && (0 != mriežkaX || 0 != mriežkaY);
-	}*/
-
 	public static double mriežkaX()
 	{
 		if (0 == mriežkaX) return mriežkaY;
@@ -663,12 +652,6 @@ public class Systém extends GRobot
 		if (0 == mriežkaY) return mriežkaX;
 		return mriežkaY;
 	}
-
-	/* TODO del public static boolean prichytávajKRozmeru()
-	{
-		return prichytávajKMriežkam &&
-			(0 != mriežkaŠírka || 0 != mriežkaVýška);
-	}*/
 
 	public static double mriežkaŠírka()
 	{
@@ -690,34 +673,10 @@ public class Systém extends GRobot
 		return mriežkaVýška;
 	}
 
-	/* TODO del public static boolean prichytávajKUhlu()
-	{
-		return prichytávajKMriežkam && 0 != mriežkaUhol;
-	}*/
-
 	public static double mriežkaUhol()
 	{
 		return mriežkaUhol;
 	}
-
-	/* TODO del public static boolean prichytávajKMriežkam()
-	{
-		return prichytávajKMriežkam;
-	}
-
-	/* TODO del public static void prichytávajKMriežkam(boolean prichytávajKMriežkam)
-	{
-		Systém.prichytávajKMriežkam = prichytávajKMriežkam;
-		položkaPrepniPrichytávanie.ikona(prichytávajKMriežkam ?
-			ikonaOznačenia : ikonaNeoznačenia);
-	}
-
-	public static void prepniPrichytávanieKMriežkam()
-	{
-		prichytávajKMriežkam = !prichytávajKMriežkam;
-		položkaPrepniPrichytávanie.ikona(prichytávajKMriežkam ?
-			ikonaOznačenia : ikonaNeoznačenia);
-	} */
 
 	public boolean zobrazMriežku()
 	{
@@ -733,14 +692,13 @@ public class Systém extends GRobot
 			if (0 == mriežkaX) Πx = mriežkaY;
 			if (0 == mriežkaY) Πy = mriežkaX;
 
-			/* TODO del double Πšírka = mriežkaŠírka, Πvýška = mriežkaVýška;
-			if (0 == mriežkaŠírka) Πšírka = mriežkaVýška;
-			if (0 == mriežkaVýška) Πvýška = mriežkaŠírka;*/
-
+			// Z globálneho posunu „stačí“ použiť drobný rozdiel v rámci
+			// rozostupov mriežky (resp. nie, že „stačí,“ v skutočnosti
+			// je to nevyhnutné, lebo väčší posun by mriežku posunul mimo
+			// zorné pole…).
 			double posunX = globálneX % Πx;
 			double posunY = globálneY % Πy;
 
-			/** TODO dorobiť globálny posun mriežky **/
 			double x0 = najmenšieX() - 2 * Πx;
 			double x1 = najväčšieX() + 2 * Πx;
 			x0 = floor(x0 / Πx) * Πx + posunX;
@@ -1011,11 +969,6 @@ public class Systém extends GRobot
 
 	public void locgridSelection()
 	{
-		// TODO del
-		// Linka[] označené = Linka.dajOznačené();
-		// for (Linka označená : označené)
-		// 	označená.prepniZarovnávaniePolohy();
-
 		if (0 == mriežkaX && 0 == mriežkaY) return;
 		Linka[] označené = Linka.dajOznačené();
 		double Πx = mriežkaX, Πy = mriežkaY;
@@ -1030,11 +983,6 @@ public class Systém extends GRobot
 
 	public void sizgridSelection()
 	{
-		// TODO del
-		// Linka[] označené = Linka.dajOznačené();
-		// for (Linka označená : označené)
-		// 	označená.prepniZarovnávanieRozmerov();
-
 		if (0 == mriežkaŠírka && 0 == mriežkaVýška) return;
 		Linka[] označené = Linka.dajOznačené();
 		double Πšírka = mriežkaŠírka, Πvýška = mriežkaVýška;
@@ -1052,11 +1000,6 @@ public class Systém extends GRobot
 
 	public void anggridSelection()
 	{
-		// TODO del
-		// Linka[] označené = Linka.dajOznačené();
-		// for (Linka označená : označené)
-		// 	označená.prepniZarovnávanieUhla();
-
 		if (0 == mriežkaUhol) return;
 		Linka[] označené = Linka.dajOznačené();
 		for (Linka linka : označené) linka.uhol(
@@ -1294,7 +1237,6 @@ public class Systém extends GRobot
 
 		zobrazInformácie(true);
 		zobrazMriežku(false);
-		// TODO del prichytávajKMriežkam(false);
 
 		mriežkaX = 20.0; mriežkaY = 0.0;
 		mriežkaŠírka = 20.0; mriežkaVýška = 0.0;
@@ -1354,7 +1296,6 @@ public class Systém extends GRobot
 		else if (locgridSelection == príkaz) locgridSelection();
 		else if (sizgridSelection == príkaz) sizgridSelection();
 		else if (anggridSelection == príkaz) anggridSelection();
-		// TODO del else if (snapGrid == príkaz) prepniPrichytávanieKMriežkam();
 		else if (toggleGrid == príkaz) prepniZobrazenieMriežky();
 		else if (configGrid == príkaz) configGrid();
 		else if (duplicateSelection == príkaz) duplicateSelection();
@@ -1598,11 +1539,6 @@ public class Systém extends GRobot
 			začiatokAkcie = null;
 			koniecAkcie = null;
 		}
-		/* TODO del
-		else if (posúvajObjekty)
-		{
-			if (prichytávajKMriežkam) locgridSelection();
-		}*/
 		posúvajObjekty = false;
 	}
 
@@ -1866,7 +1802,6 @@ public class Systém extends GRobot
 		súbor.zapíšVlastnosť("pauza", pauza);
 		súbor.zapíšVlastnosť("zobrazInformácie", zobrazInformácie);
 		súbor.zapíšVlastnosť("zobrazMriežku", zobrazMriežku);
-		// TODO del súbor.zapíšVlastnosť("prichytávajKMriežkam", prichytávajKMriežkam);
 
 		súbor.vnorMennýPriestorVlastností("mriežka"); try {
 			súbor.zapíšVlastnosť("x", mriežkaX);
@@ -1944,8 +1879,6 @@ public class Systém extends GRobot
 			zobrazInformácie(null == hodnota ? true : hodnota);
 			hodnota = súbor.čítajVlastnosť("zobrazMriežku", false);
 			zobrazMriežku(null == hodnota ? true : hodnota);
-			// TODO del hodnota = súbor.čítajVlastnosť("prichytávajKMriežkam", false);
-			// TODO del prichytávajKMriežkam(null == hodnota ? true : hodnota);
 		}
 
 		{
