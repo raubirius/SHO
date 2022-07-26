@@ -1,2 +1,2 @@
 # SHO
- Simulátor systémov hromadnej obsluhy – SHO (Mass Service System – MSS – Simulator)
+ Simulátor systémov hromadnej obsluhy – SHO; Simulator of Queuing Networks – QN
