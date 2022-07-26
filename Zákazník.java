@@ -270,8 +270,10 @@ public class Zákazník extends GRobot implements Činnosť
 
 				if (smerujeDoCieľa()) skočNaCieľ();
 
-				// TODO .dajLinku(), ktorá je voľná – podľa spojníc a podľa
-				// stanovených priorít (pravdepodobností) – režimy:
+				// TODO: .dajLinku(), ktorá je voľná – čo sa určuje podľa
+				// spojníc a podľa stanovených priorít (pravdepodobností).
+				// 
+				// Režimy:
 				// 
 				//  • postupné prehľadávanie (bude cyklické počítadlo, ktoré
 				//    vždy určí, ktorou linkou sa začne hľadanie voľnej linky)
