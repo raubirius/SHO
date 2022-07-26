@@ -1,5 +1,6 @@
 
 import java.awt.Shape;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.TreeSet;
 import java.util.Vector;
@@ -57,6 +58,10 @@ public class Linka extends GRobot implements Činnosť
 	private final KontextováPoložka položkaUpravKoeficienty;
 	private final KontextováPoložka položkaUpravVizuály;
 	private final KontextováPoložka položkaPrepniInformácie;
+	// TODO del
+	// private final KontextováPoložka položkaPrepniZarovnaniePolohy;
+	// private final KontextováPoložka položkaPrepniZarovnanieRozmerov;
+	// private final KontextováPoložka položkaPrepniZarovnanieUhla;
 	private final KontextováPoložka položkaVymaž;
 
 
@@ -74,6 +79,9 @@ public class Linka extends GRobot implements Činnosť
 		// (meniťŠírku = 0; točiť = 1; meniťRozmery = 2; meniťVýšku = 3;
 		// meniťMieruZaoblenia = 4)
 	private boolean označená = false;
+	private int bliká = 0;
+	private int klik = 0;
+	private MouseEvent myš = null;
 	private double čas = 0.0;
 	private int hladina = -1;
 		// Zaraďovanie do hladín je dôležité pri triedení pred každým cyklom
@@ -102,14 +110,22 @@ public class Linka extends GRobot implements Činnosť
 	private double časovač = 1.0;
 	private double rozptyl = 0.0;
 	private int kapacita = 10;
-	private TvarLinky tvar = null;
+	private RežimKresleniaLinky režimKreslenia = null;
 	private String názovTvaru = null;
+	private byte transformácieTvaru = 0;
 	private Shape tvarTvaru = null;
 	private double mieraZaoblenia = 0.50;
-	private int početČiarObrysu = 1;
+	private int početČiarObrysu = 1; // Poznámka: Nulovým (alebo menším)
+		// počtom čiar obrysu viem objekt skryť.
 	private double rozostupyČiarObrysu = 2.0;
 	private boolean zobrazInformácie = true;
 
+	// TODO del
+	// (Zarovnávanie je implementované tak, že sa vykonáva vždy pri
+	// prekreslení linky.)
+	// private boolean zarovnávajPolohu = false;
+	// private boolean zarovnávajRozmery = false;
+	// private boolean zarovnávajUhol = false;
 
 	// Evidencia zákazníkov:
 	private final Vector<Zákazník> zákazníci = new Vector<>();
@@ -119,6 +135,11 @@ public class Linka extends GRobot implements Činnosť
 	// (poznámka: funkciu getInstance plní metóda pridaj):
 	private Linka(String popis)
 	{
+		// vlastnýTvar("vlastnýTvar.png"); // TODO del –– slúžilo
+			// na otestovanie frameworku –– ešte sa k tomu bude treba vrátiť,
+			// ale na to bude treba naprogramovať vlastnú testovaciu
+			// miniaplikáciu.
+
 		// Registrácia liniek:
 		linky.add(this);
 		Systém.činnosti.add(this);
@@ -162,6 +183,14 @@ public class Linka extends GRobot implements Činnosť
 		položkaPrepniInformácie = kontextováPonuka.pridajPoložku(
 			"Zobraz informácie");
 
+		// TODO del
+		// položkaPrepniZarovnaniePolohy = kontextováPonuka.pridajPoložku(
+		// 	"Zarovnávaj polohu");
+		// položkaPrepniZarovnanieRozmerov = kontextováPonuka.pridajPoložku(
+		// 	"Zarovnávaj rozmery");
+		// položkaPrepniZarovnanieUhla = kontextováPonuka.pridajPoložku(
+		// 	"Zarovnávaj pootočenie");
+
 		kontextováPonuka.pridajOddeľovač();
 
 		položkaVymaž = kontextováPonuka.pridajPoložku("Vymaž");
@@ -193,17 +222,25 @@ public class Linka extends GRobot implements Činnosť
 		položkaZmeňNaUvoľňovač.ikona(ÚčelLinky.UVOĽŇOVAČ == účel ?
 			Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
 
-		položkaZrušTvar.ikona(null == tvar ?
+		položkaZrušTvar.ikona(null == režimKreslenia ?
 			Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
-		položkaZmeňNaElipsu.ikona(TvarLinky.ELIPSA == tvar ?
-			Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
-		položkaZmeňNaObdĺžnik.ikona(TvarLinky.OBDĹŽNIK == tvar ?
-			Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
-		položkaZmeňNaInýTvar.ikona(TvarLinky.INÝ_TVAR == tvar ?
-			Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
+		položkaZmeňNaElipsu.ikona(RežimKresleniaLinky.ELIPSA ==
+			režimKreslenia ? Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
+		položkaZmeňNaObdĺžnik.ikona(RežimKresleniaLinky.OBDĹŽNIK ==
+			režimKreslenia ? Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
+		položkaZmeňNaInýTvar.ikona(RežimKresleniaLinky.VLASTNÝ_TVAR ==
+			režimKreslenia ? Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
 
 		položkaPrepniInformácie.ikona(zobrazInformácie ?
 			Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
+
+		// TODO del
+		// položkaPrepniZarovnaniePolohy.ikona(zarovnávajPolohu ?
+		// 	Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
+		// položkaPrepniZarovnanieRozmerov.ikona(zarovnávajRozmery ?
+		// 	Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
+		// položkaPrepniZarovnanieUhla.ikona(zarovnávajUhol ?
+		// 	Systém.ikonaOznačenia : Systém.ikonaNeoznačenia);
 	}
 
 	// Vytvorenie (alebo zrušenie) spojnice musí mať za následok preradenie
@@ -216,7 +253,7 @@ public class Linka extends GRobot implements Činnosť
 		Spojnica spojnica = super.spojnica(cieľ, šedá);
 		if (null == spojnica) return null;
 
-		if (TvarLinky.ELIPSA != tvar)
+		if (RežimKresleniaLinky.ELIPSA != režimKreslenia)
 			spojnica.orezanieZačiatku(obdĺžnik());
 		else
 			spojnica.orezanieZačiatku(elipsa());
@@ -224,7 +261,7 @@ public class Linka extends GRobot implements Činnosť
 		if (cieľ instanceof Linka)
 		{
 			Linka linka = (Linka)cieľ;
-			if (TvarLinky.ELIPSA != linka.tvar)
+			if (RežimKresleniaLinky.ELIPSA != linka.režimKreslenia)
 				spojnica.orezanieKonca(linka.obdĺžnik());
 			else
 				spojnica.orezanieKonca(linka.elipsa());
@@ -261,6 +298,11 @@ public class Linka extends GRobot implements Činnosť
 	}
 
 	private void preevidujTvar(String názov)
+	{ preevidujTvar(názov, false, (byte)0); }
+	private void preevidujTvar(String názov, boolean prispôsobPomer)
+	{ preevidujTvar(názov, prispôsobPomer, (byte)0); }
+	private void preevidujTvar(String názov, boolean prispôsobPomer,
+		byte transformujTvar)
 	{
 		if (null != názovTvaru) Tvar.odeviduj(názovTvaru);
 
@@ -269,31 +311,55 @@ public class Linka extends GRobot implements Činnosť
 		{
 			// veľkosťPodľaMierky();
 			mierka(1);
+			mierkaPomeru(1);
 			tvarTvaru = null;
+			transformácieTvaru = 0;
 		}
 		else
 		{
-			tvarTvaru = Tvar.daj(názovTvaru);
+			tvarTvaru = Tvar.daj(názovTvaru, transformujTvar);
+			transformácieTvaru = transformujTvar;
 			if (null == tvarTvaru)
 			{
 				mierka(1);
+				mierkaPomeru(1);
 				názovTvaru = null;
 				tvarTvaru = null;
+				transformácieTvaru = 0;
 			}
 			else
 			{
 				mierka(1);
+				mierkaPomeru(1);
+
+				// double šírkaLinky = šírka(); // TODO del (testy)
+				// double výškaLinky = výška();
+
 				double výškaTvaru = tvarTvaru.getBounds2D().getHeight();
+				double šírkaTvaru = tvarTvaru.getBounds2D().getWidth();
+
+				// TODO:
+				// 
+				// ✓ Umožniť pri výbere tvaru zvoliť, či sa má veľkosť
+				//   linky prispôsobiť rozmerom nového tvaru (predvolene
+				//   zapnuté).
+
 				mierka(výška() / výškaTvaru);
-				/*System.out.println("výška(): " + výška());
-				System.out.println("výškaTvaru: " + výškaTvaru);*/ // TODO del
+				mierkaPomeru(šírka() / (šírkaTvaru * mierka()));
+				if (prispôsobPomer)
+					šírka(šírkaTvaru * mierka());
+
+				// TODO del (testy)
+				// mierkaPomeru(2);
+				/*System.out.println("mierka(): " + mierka());
+				System.out.println("šírka(): " + šírka() + " alebo " + šírkaLinky + "?");
+				System.out.println("šírkaTvaru: " + šírkaTvaru);
+				System.out.println("šírkaTvaru v mierke?: " + šírkaTvaru * mierka());
+				System.out.println("mierkaPomeru(): " + mierkaPomeru());*/
+
 				Tvar.eviduj(názovTvaru);
 			}
 		}
-
-		/*System.out.println("názovTvaru: " + názovTvaru);
-		System.out.println("tvarTvaru: " + tvarTvaru);
-		System.out.println("tvar: " + tvar);*/ // TODO del
 	}
 
 	private void reset(String popis)
@@ -306,15 +372,25 @@ public class Linka extends GRobot implements Činnosť
 		popis(popis);
 		veľkosťPísma(hlavnýRobot().písmo().veľkosť());
 		popisPod = false;
+		označená = false;
+		bliká = 0;
+		klik = 0;
+		myš = null;
 		čas = Systém.čas;
 		účel = null;
 		časovač = 1.0;
 		rozptyl = 0.0;
 		kapacita = 10;
-		tvar = null;
+		režimKreslenia = null;
 		preevidujTvar(null);
 		mieraZaoblenia(0.5);
 		zobrazInformácie = true;
+
+		// TODO del
+		// zarovnávajPolohu = false;
+		// zarovnávajRozmery = false;
+		// zarovnávajUhol = false;
+
 		početČiarObrysu = 1;
 		rozostupyČiarObrysu = 2.0;
 		aktivuj(false);
@@ -345,14 +421,24 @@ public class Linka extends GRobot implements Činnosť
 		// Nastavovanie tvaru sa dá robiť cez sériu samostatných metód.
 		// Každá robí takmer to isté s drobnými odchýlkami. Všetko je však
 		// v zásade pokryté nižšie…
-		tvar = iná.tvar;
-		preevidujTvar(iná.názovTvaru);
-		if (null == názovTvaru) tvar = null;
+		režimKreslenia = iná.režimKreslenia;
+		preevidujTvar(iná.názovTvaru, false, iná.transformácieTvaru);
+		if (null == názovTvaru) režimKreslenia = null;
 		mieraZaoblenia(iná.mieraZaoblenia);
 		zobrazInformácie = iná.zobrazInformácie;
+
+		// TODO del
+		// zarovnávajPolohu = iná.zarovnávajPolohu;
+		// zarovnávajRozmery = iná.zarovnávajRozmery;
+		// zarovnávajUhol = iná.zarovnávajUhol;
+
 		početČiarObrysu = iná.početČiarObrysu;
 		rozostupyČiarObrysu = iná.rozostupyČiarObrysu;
 
+		označená = false;
+		bliká = 0;
+		klik = 0;
+		myš = null;
 		čas = iná.čas;
 
 		// Kopíruj zdrojové spojnice inej linky
@@ -372,6 +458,12 @@ public class Linka extends GRobot implements Činnosť
 		vyraďZákazníkov();
 		aktualizujKontextovúPonuku();
 		aktualizujSpojnice();
+	}
+
+
+	public void blikni()
+	{
+		bliká = 10;
 	}
 
 
@@ -531,7 +623,7 @@ public class Linka extends GRobot implements Činnosť
 		for (int i = 0; i < počet; ++i)
 		{
 			Linka linka = linky.get(i);
-			if (linka.aktívny() && linka.označená())
+			if (linka.aktívny() && linka.označená)
 				++početOznačených;
 		}
 		return početOznačených;
@@ -545,7 +637,7 @@ public class Linka extends GRobot implements Činnosť
 		for (int i = 0; i < počet; ++i)
 		{
 			Linka linka = linky.get(i);
-			if (linka.aktívny() && linka.označená())
+			if (linka.aktívny() && linka.označená)
 				označené.add(linka);
 		}
 
@@ -556,6 +648,19 @@ public class Linka extends GRobot implements Činnosť
 		označené = null;
 
 		return pole;
+	}
+
+	public static boolean myšVOznačenej()
+	{
+		for (Linka linka : linky)
+			if (linka.aktívny() && linka.myšV()) return true;
+		return false;
+	}
+
+	public static void blikniOznačené()
+	{
+		for (Linka linka : linky)
+			if (linka.aktívny() && linka.označená) linka.blikni();
 	}
 
 
@@ -591,7 +696,7 @@ public class Linka extends GRobot implements Činnosť
 	}
 
 	private final static String[] popisyÚpravyPopisuOznačených = new String[]
-		{"Upravte spoločný popis označených liniek:",
+		{"Upravte spoločný popis označených liniek:", "Veľkosť písma:",
 		"Umiestňovať popisy pod linky"};
 
 	public static void upravPopisy()
@@ -603,7 +708,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.upravPopis();
 					break;
@@ -617,7 +722,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					if (null != linka.popis)
 						zoznam.add(linka.popis);
@@ -652,7 +757,7 @@ public class Linka extends GRobot implements Činnosť
 				for (int i = 0; i < n; ++i)
 				{
 					Linka linka = linky.get(i);
-					if (linka.aktívny() && linka.označená())
+					if (linka.aktívny() && linka.označená)
 					{
 						linka.popis((String)údaje[0]);
 						if (!Double.isNaN((Double)údaje[1]))
@@ -679,7 +784,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zrušÚčel();
 					break;
@@ -691,7 +796,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zrušÚčel();
 			}
 		}
@@ -712,7 +817,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zmeňNaEmitor();
 					break;
@@ -724,7 +829,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zmeňNaEmitor();
 			}
 		}
@@ -745,7 +850,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zmeňNaZásobník();
 					break;
@@ -757,7 +862,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zmeňNaZásobník();
 			}
 		}
@@ -778,7 +883,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zmeňNaČakáreň();
 					break;
@@ -790,7 +895,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zmeňNaČakáreň();
 			}
 		}
@@ -811,7 +916,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zmeňNaDopravník();
 					break;
@@ -823,7 +928,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zmeňNaDopravník();
 			}
 		}
@@ -844,7 +949,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zmeňNaMenič();
 					break;
@@ -856,7 +961,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zmeňNaMenič();
 			}
 		}
@@ -877,7 +982,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zmeňNaUvoľňovač();
 					break;
@@ -889,7 +994,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zmeňNaUvoľňovač();
 			}
 		}
@@ -899,7 +1004,7 @@ public class Linka extends GRobot implements Činnosť
 	public void zrušTvar()
 	{
 		zaoblenie(min(výška(), šírka()) * mieraZaoblenia);
-		tvar = null;
+		režimKreslenia = null;
 		preevidujTvar(null);
 		aktualizujKontextovúPonuku();
 		aktualizujSpojnice();
@@ -914,7 +1019,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zrušTvar();
 					break;
@@ -926,7 +1031,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zrušTvar();
 			}
 		}
@@ -936,7 +1041,7 @@ public class Linka extends GRobot implements Činnosť
 	public void zmeňNaElipsu()
 	{
 		zaoblenie(0);
-		tvar = TvarLinky.ELIPSA;
+		režimKreslenia = RežimKresleniaLinky.ELIPSA;
 		preevidujTvar(null);
 		aktualizujKontextovúPonuku();
 		aktualizujSpojnice();
@@ -951,7 +1056,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zmeňNaElipsu();
 					break;
@@ -963,7 +1068,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zmeňNaElipsu();
 			}
 		}
@@ -973,7 +1078,7 @@ public class Linka extends GRobot implements Činnosť
 	public void zmeňNaObdĺžnik()
 	{
 		zaoblenie(0);
-		tvar = TvarLinky.OBDĹŽNIK;
+		režimKreslenia = RežimKresleniaLinky.OBDĹŽNIK;
 		preevidujTvar(null);
 		aktualizujKontextovúPonuku();
 		aktualizujSpojnice();
@@ -988,7 +1093,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zmeňNaObdĺžnik();
 					break;
@@ -1000,22 +1105,107 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zmeňNaObdĺžnik();
 			}
 		}
 	}
 
 
-	private static String vyberTvar()
+	private static class VoľbaTvaru
 	{
-		// TODO – dokončiť
-		String zoznam[] = Tvar.zoznam();
-		String info = "<html><i>Toto je dočasné riešenie výberu tvaru." +
-			"<br />Zadajte jeden z nasledujúcich názvov:</i><br />";
+		public final String názov;
+		public final byte transformácie;
+		public final boolean prispôsobPomer;
+		public VoľbaTvaru(String názov, byte transformácie,
+			boolean prispôsobPomer)
+		{
+			this.názov = názov;
+			this.transformácie = transformácie;
+			this.prispôsobPomer = prispôsobPomer;
+		}
+	}
 
-		boolean prvý = true; int i = 0;
-		for (String položka : zoznam)
+	private final static String[] popisyVoľbyTvaruSingulár = new String[]
+		{"Zvoľte tvar linky:", "Zrkadliť horizontálne (sprava doľava)",
+		"Zrkadliť vertikálne (zhora nadol)", "Pootočiť tvar",
+		"Prispôsobiť pomer strán linky k rozmerom zvoleného tvaru"};
+
+	private final static String[] popisyVoľbyTvaruPlurál = new String[]
+		{"Zvoľte nový tvar pre označené linky:",
+		"Zrkadliť horizontálne (sprava doľava)",
+		"Zrkadliť vertikálne (zhora nadol)", "Pootočiť tvary",
+		"Prispôsobiť pomery strán liniek k rozmerom zvoleného tvaru"};
+
+	private static VoľbaTvaru vyberTvar(String názov, byte transformácie)
+	{ return vyberTvar(názov, transformácie, popisyVoľbyTvaruSingulár,
+		"Výber vlastného tvaru linky"); }
+	private static VoľbaTvaru vyberTvar(String názov, byte transformácie,
+		String[] popisyVoľbyTvaru, String titulok)
+	{
+		// TODO del – dočasné riešenie (zadaním názvu tvaru)
+		/*String zoznam0[] = Tvar.zoznam();
+		String info = "<html><i>Toto je dočasné riešenie výberu tvaru." +
+			"<br />Zadajte jeden z nasledujúcich názvov:</i><br />";*/
+
+		Zoznam<Obrázok> zoznam = new Zoznam<>(Tvar.obrázokPodľaNázvu(názov));
+		Tvar.naplňZoznamObrázkov(zoznam);
+
+		// TODO:
+		// ✓ Dať možnosť voľby prispôsobenia pomeru.
+		// • Dať možnosť zrkadlového kreslenia tvaru.
+		// • Načítať a označiť aktuálnu voľbu tvaru a zrkadlenia.
+
+		Boolean zrkadliHorizontálne = 0 != (transformácie & 1);
+		Boolean zrkadliVertikálne   = 0 != (transformácie & 2);
+
+		// TODO del (testy)
+		// System.out.println("zrkadliHorizontálne: " + zrkadliHorizontálne);
+		// System.out.println("zrkadliVertikálne: " + zrkadliVertikálne);
+
+		RotáciaTvaru kvadrant = RotáciaTvaru.Q0;
+		switch (transformácie & 12)
+		{
+		case 4: kvadrant = RotáciaTvaru.Q1; break;
+		case 8: kvadrant = RotáciaTvaru.Q2; break;
+		case 12: kvadrant = RotáciaTvaru.Q3; break;
+		}
+
+		Object[] údaje = {zoznam, zrkadliHorizontálne, zrkadliVertikálne,
+			kvadrant, Boolean.TRUE};
+
+		// TODO — rozbi „na drobné“
+
+		String zvolený = null;
+		boolean pomer = true;
+
+		if (dialóg(popisyVoľbyTvaru, údaje, titulok))
+		{
+			transformácie = (byte)(
+				((null != údaje[1] && (Boolean)údaje[1]) ? 1 : 0) |
+				((null != údaje[2] && (Boolean)údaje[2]) ? 2 : 0));
+
+			// TODO del (testy)
+			// System.out.println("transformácie: " + transformácie);
+
+			switch ((RotáciaTvaru)údaje[3])
+			{
+			case Q1: transformácie |= 4; break;
+			case Q2: transformácie |= 8; break;
+			case Q3: transformácie |= 12; break;
+			}
+
+			// TODO del (testy)
+			// System.out.println("transformácie: " + transformácie);
+
+			zvolený = Tvar.názovPodľaObrázka(zoznam.daj(0));
+
+			pomer = null == údaje[4] || (Boolean)údaje[4];
+		}
+
+		// TODO del – dočasné riešenie (zadaním názvu tvaru)
+		/*boolean prvý = true; int i = 0;
+		for (String položka : zoznam0)
 		{
 			if (prvý)
 			{
@@ -1034,28 +1224,38 @@ public class Linka extends GRobot implements Činnosť
  
 		info += ".</html>";
 
-		return zadajReťazec(info, "Výber tvaru (dočasné riešenie)");
+		String zvolený = zadajReťazec(info,
+			"Výber tvaru (dočasné riešenie)");*/
+
+		zoznam.vymaž(); zoznam = null;
+		return new VoľbaTvaru(zvolený, transformácie, pomer);
 	}
 
 	public void zmeňNaInýTvar()
 	{
-		zaoblenie(min(výška(), šírka()) * mieraZaoblenia);
-		tvar = TvarLinky.INÝ_TVAR;
+		VoľbaTvaru voľbaTvaru = vyberTvar(názovTvaru, transformácieTvaru);
+		if (null != voľbaTvaru.názov)
+		{
+			zaoblenie(min(výška(), šírka()) * mieraZaoblenia);
+			režimKreslenia = RežimKresleniaLinky.VLASTNÝ_TVAR;
 
-		preevidujTvar(vyberTvar());
-		if (null == názovTvaru) tvar = null;
+			preevidujTvar(voľbaTvaru.názov, voľbaTvaru.prispôsobPomer,
+				voľbaTvaru.transformácie);
+			if (null == názovTvaru) režimKreslenia = null;
 
-		aktualizujKontextovúPonuku();
-		aktualizujSpojnice();
+			aktualizujKontextovúPonuku();
+			aktualizujSpojnice();
+		}
 	}
 
-	public void zmeňNaInýTvar(String zvolený)
+	public void zmeňNaInýTvar(String zvolený, boolean prispôsobPomer,
+		byte transformujTvar)
 	{
 		zaoblenie(min(výška(), šírka()) * mieraZaoblenia);
-		tvar = TvarLinky.INÝ_TVAR;
+		režimKreslenia = RežimKresleniaLinky.VLASTNÝ_TVAR;
 
-		preevidujTvar(zvolený);
-		if (null == názovTvaru) tvar = null;
+		preevidujTvar(zvolený, prispôsobPomer, transformujTvar);
+		if (null == názovTvaru) režimKreslenia = null;
 
 		aktualizujKontextovúPonuku();
 		aktualizujSpojnice();
@@ -1070,7 +1270,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zmeňNaInýTvar();
 					break;
@@ -1078,13 +1278,78 @@ public class Linka extends GRobot implements Činnosť
 		}
 		else
 		{
-			String zvolený = vyberTvar();
 			int n = linky.size();
-			for (int i = 0; i < n; ++i)
+			String názovTvaru = null;
 			{
-				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
-					linka.zmeňNaInýTvar(zvolený);
+				// Ak sú názvy všetkých označených liniek rovnaké (pričom
+				// prázdne názvy sú ignorované), tak sa tento spoločný názov
+				// použije ako predvolená hodnota výberu tvaru.
+				int i = 0;
+				for (; i < n; ++i)
+				{
+					Linka linka = linky.get(i);
+					if (linka.aktívny() && linka.označená &&
+						null != linka.názovTvaru)
+					{
+						názovTvaru = linka.názovTvaru;
+						break;
+					}
+				}
+
+				for (; i < n; ++i)
+				{
+					Linka linka = linky.get(i);
+					if (linka.aktívny() && linka.označená &&
+						null != linka.názovTvaru &&
+						!názovTvaru.equals(linka.názovTvaru))
+					{
+						názovTvaru = null;
+						break;
+					}
+				}
+			}
+			byte transformácieTvaru = 0;
+			{
+				// TODO treba otestovať transformácie.
+				int i = 0;
+				for (; i < n; ++i)
+				{
+					Linka linka = linky.get(i);
+					if (linka.aktívny() && linka.označená &&
+						null != linka.názovTvaru)
+					{
+						transformácieTvaru = linka.transformácieTvaru;
+						break;
+					}
+				}
+
+				for (; i < n; ++i)
+				{
+					Linka linka = linky.get(i);
+					if (linka.aktívny() && linka.označená &&
+						null != linka.názovTvaru &&
+						transformácieTvaru != linka.transformácieTvaru)
+					{
+						transformácieTvaru = 0;
+						break;
+					}
+				}
+			}
+
+			VoľbaTvaru voľbaTvaru = vyberTvar(
+				názovTvaru, transformácieTvaru, popisyVoľbyTvaruPlurál,
+				"Výber vlastného tvaru označených liniek");
+
+			if (null != voľbaTvaru.názov)
+			{
+				for (int i = 0; i < n; ++i)
+				{
+					Linka linka = linky.get(i);
+					if (linka.aktívny() && linka.označená)
+						linka.zmeňNaInýTvar(voľbaTvaru.názov,
+							voľbaTvaru.prispôsobPomer,
+							voľbaTvaru.transformácie);
+				}
 			}
 		}
 	}
@@ -1099,7 +1364,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.prepniZobrazenieInformácií();
 					break;
@@ -1111,7 +1376,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.prepniZobrazenieInformácií();
 			}
 		}
@@ -1126,7 +1391,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zobrazInformácie(false);
 					break;
@@ -1138,7 +1403,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zobrazInformácie(false);
 			}
 		}
@@ -1153,7 +1418,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.zobrazInformácie(true);
 					break;
@@ -1165,7 +1430,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 					linka.zobrazInformácie(true);
 			}
 		}
@@ -1247,7 +1512,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.upravKoeficienty();
 					break;
@@ -1260,7 +1525,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					if (ÚčelLinky.ZÁSOBNÍK == linka.účel) typ |= 2;
 					else if (null == linka.účel ||
@@ -1306,7 +1571,7 @@ public class Linka extends GRobot implements Činnosť
 				for (int i = 0; i < n; ++i)
 				{
 					Linka linka = linky.get(i);
-					if (linka.aktívny() && linka.označená())
+					if (linka.aktívny() && linka.označená)
 					{
 						if (!Double.isNaN((Double)údaje[0]))
 							linka.časovač = (Double)údaje[0];
@@ -1320,7 +1585,7 @@ public class Linka extends GRobot implements Činnosť
 				for (int i = 0; i < n; ++i)
 				{
 					Linka linka = linky.get(i);
-					if (linka.aktívny() && linka.označená())
+					if (linka.aktívny() && linka.označená)
 					{
 						if (!Double.isNaN((Double)údaje[0]))
 							linka.kapacita = ((Double)údaje[0]).intValue();
@@ -1332,7 +1597,7 @@ public class Linka extends GRobot implements Činnosť
 				for (int i = 0; i < n; ++i)
 				{
 					Linka linka = linky.get(i);
-					if (linka.aktívny() && linka.označená())
+					if (linka.aktívny() && linka.označená)
 					{
 						if (!Double.isNaN((Double)údaje[0]))
 							linka.časovač = (Double)údaje[0];
@@ -1349,7 +1614,7 @@ public class Linka extends GRobot implements Činnosť
 
 	private final static String[] popisyVizuálov = new String[]
 		{"Pomer šírky k výške:", "Veľkosť (výška):",
-		"Miera zaoblenia rohov (okrem pevných tvarov):",
+		"Miera zaoblenia rohov predvoleného tvaru:",
 		"Počet čiar obrysu (0 – n):", "Rozostupy medzi čiarami obrysu:",
 		"Uhol (pootočenie; 90° – zvislá poloha):"};
 
@@ -1380,7 +1645,7 @@ public class Linka extends GRobot implements Činnosť
 		{"<html><i>Poznámka: Ak chcete niektorý spoločný parameter " +
 			"ignorovať<br />(nenastaviť), údaj vymažte a nechajte políčko " +
 			"prázdne.</i><br /> <br />Pomery šírok k výškam:</html>",
-		"Veľkosti (výšky):", "Miery zaoblenia rohov (okrem pevných tvarov):",
+		"Veľkosti (výšky):", "Miery zaoblenia rohov predvoleného tvaru:",
 		"Počty čiar obrysov (0 – n):", "Rozostupy medzi čiarami obrysov:",
 		"Uhly (pootočenia; 90° – zvislá poloha):"};
 
@@ -1393,7 +1658,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.upravVizuály();
 					break;
@@ -1406,7 +1671,7 @@ public class Linka extends GRobot implements Činnosť
 			for (int i = 0; i < n; ++i)
 			{
 				Linka linka = linky.get(i);
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					priemery[0] += linka.pomer();
 					priemery[1] += linka.veľkosť();
@@ -1434,7 +1699,7 @@ public class Linka extends GRobot implements Činnosť
 				for (int i = 0; i < n; ++i)
 				{
 					Linka linka = linky.get(i);
-					if (linka.aktívny() && linka.označená())
+					if (linka.aktívny() && linka.označená)
 					{
 						if (!Double.isNaN((Double)údaje[0]))
 							linka.pomer((Double)údaje[0] < 0 ? 0 :
@@ -1470,6 +1735,12 @@ public class Linka extends GRobot implements Činnosť
 		}
 	}
 
+	public static void vymažVšetko() // Vymaže všetky linky
+	{
+		for (Linka linka : linky)
+			if (linka.aktívny()) linka.deaktivuj();
+	}
+
 	public static void vymažOznačené()
 	{
 		int početOznačených = početOznačených();
@@ -1479,7 +1750,7 @@ public class Linka extends GRobot implements Činnosť
 		else if (1 == početOznačených)
 		{
 			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
+				if (linka.aktívny() && linka.označená)
 				{
 					linka.vymaž();
 					break;
@@ -1494,7 +1765,7 @@ public class Linka extends GRobot implements Činnosť
 				for (int i = 0; i < n; ++i)
 				{
 					Linka linka = linky.get(i);
-					if (linka.aktívny() && linka.označená())
+					if (linka.aktívny() && linka.označená)
 						linka.deaktivuj();
 				}
 				Systém.repauzuj();
@@ -1575,7 +1846,8 @@ public class Linka extends GRobot implements Činnosť
 
 	public void aktualizujZaoblenie()
 	{
-		zaoblenie(null == this.tvar || TvarLinky.INÝ_TVAR == this.tvar ?
+		zaoblenie(null == this.režimKreslenia ||
+			RežimKresleniaLinky.VLASTNÝ_TVAR == this.režimKreslenia ?
 			(min(výška(), šírka()) * mieraZaoblenia) : 0.0);
 	}
 
@@ -1583,7 +1855,8 @@ public class Linka extends GRobot implements Činnosť
 	{
 		if (mieraZaoblenia < 0) mieraZaoblenia = 0;
 		this.mieraZaoblenia = mieraZaoblenia;
-		zaoblenie(null == this.tvar || TvarLinky.INÝ_TVAR == this.tvar ?
+		zaoblenie(null == this.režimKreslenia ||
+			RežimKresleniaLinky.VLASTNÝ_TVAR == this.režimKreslenia ?
 			(min(výška(), šírka()) * mieraZaoblenia) : 0.0);
 	}
 
@@ -1622,6 +1895,67 @@ public class Linka extends GRobot implements Činnosť
 	}
 
 
+	// TODO del
+	/*public boolean zarovnávajPolohu()
+	{
+		return zarovnávajPolohu;
+	}
+
+	public void zarovnávajPolohu(boolean zarovnávajPolohu)
+	{
+		this.zarovnávajPolohu = zarovnávajPolohu;
+		aktualizujKontextovúPonuku();
+		žiadajPrekreslenie();
+	}
+
+	public void prepniZarovnávaniePolohy()
+	{
+		zarovnávajPolohu = !zarovnávajPolohu;
+		aktualizujKontextovúPonuku();
+		žiadajPrekreslenie();
+	}
+
+
+	public boolean zarovnávajRozmery()
+	{
+		return zarovnávajRozmery;
+	}
+
+	public void zarovnávajRozmery(boolean zarovnávajRozmery)
+	{
+		this.zarovnávajRozmery = zarovnávajRozmery;
+		aktualizujKontextovúPonuku();
+		žiadajPrekreslenie();
+	}
+
+	public void prepniZarovnávanieRozmerov()
+	{
+		zarovnávajRozmery = !zarovnávajRozmery;
+		aktualizujKontextovúPonuku();
+		žiadajPrekreslenie();
+	}
+
+
+	public boolean zarovnávajUhol()
+	{
+		return zarovnávajUhol;
+	}
+
+	public void zarovnávajUhol(boolean zarovnávajUhol)
+	{
+		this.zarovnávajUhol = zarovnávajUhol;
+		aktualizujKontextovúPonuku();
+		žiadajPrekreslenie();
+	}
+
+	public void prepniZarovnávanieUhla()
+	{
+		zarovnávajUhol = !zarovnávajUhol;
+		aktualizujKontextovúPonuku();
+		žiadajPrekreslenie();
+	}*/
+
+
 	public boolean označená()
 	{
 		return označená;
@@ -1658,8 +1992,14 @@ public class Linka extends GRobot implements Činnosť
 			súbor.zapíšVlastnosť("rozptyl", rozptyl);
 			súbor.zapíšVlastnosť("kapacita", kapacita);
 
-			súbor.zapíšVlastnosť("tvar", tvar);
+			súbor.zapíšVlastnosť("režimKreslenia", režimKreslenia);
 			súbor.zapíšVlastnosť("názovTvaru", názovTvaru);
+			súbor.zapíšVlastnosť("transformácieTvaru", transformácieTvaru);
+
+			// TODO del (testy)
+			// System.out.println("Zapíš transformácie tvaru: " +
+			// 	transformácieTvaru);
+
 			súbor.zapíšVlastnosť("pomer", pomer());
 			súbor.zapíšVlastnosť("veľkosť", veľkosť());
 			súbor.zapíšVlastnosť("uhol", uhol());
@@ -1667,6 +2007,11 @@ public class Linka extends GRobot implements Činnosť
 			súbor.zapíšVlastnosť("početČiarObrysu", početČiarObrysu);
 			súbor.zapíšVlastnosť("rozostupyČiarObrysu", rozostupyČiarObrysu);
 			súbor.zapíšVlastnosť("zobrazInformácie", zobrazInformácie);
+
+			// TODO del
+			// súbor.zapíšVlastnosť("zarovnávajPolohu", zarovnávajPolohu);
+			// súbor.zapíšVlastnosť("zarovnávajRozmery", zarovnávajRozmery);
+			// súbor.zapíšVlastnosť("zarovnávajUhol", zarovnávajUhol);
 		}
 		finally
 		{
@@ -1738,20 +2083,48 @@ public class Linka extends GRobot implements Činnosť
 				uhol(uhol);
 			}
 
+			byte transformácieTvaru = 0; // keby toto tu nie je lokálne, tak
+				// preevidujTvar(null) nižšie to prepíše…
+			{
+				Integer transformuj = súbor.čítajVlastnosť(
+					"transformácieTvaru", (int)transformácieTvaru);
+				transformácieTvaru = null == transformuj ? (byte)0 :
+					transformuj.byteValue();
+
+				// TODO del (testy)
+				// System.out.println("Čítaj transformácie tvaru: " +
+				// 	transformácieTvaru);
+			}
+
 			{
 				preevidujTvar(null);
-				String tvar = súbor.čítajVlastnosť("tvar", (String)null);
-				if (null == tvar) this.tvar = null; else switch (tvar)
+				String režimKreslenia = súbor.čítajVlastnosť(
+					"režimKreslenia", (String)null);
+				if (null == režimKreslenia) this.režimKreslenia = null; else
+				switch (režimKreslenia)
 				{
-				case "ELIPSA": this.tvar = TvarLinky.ELIPSA; break;
-				case "OBDĹŽNIK": this.tvar = TvarLinky.OBDĹŽNIK; break;
-				case "INÝ_TVAR":
-					this.tvar = TvarLinky.INÝ_TVAR;
-					preevidujTvar(súbor.čítajVlastnosť(
-						"názovTvaru", (String)null));
-					if (null == názovTvaru) this.tvar = null;
+				case "ELIPSA":
+					this.režimKreslenia = RežimKresleniaLinky.ELIPSA;
 					break;
-				default: this.tvar = null; break;
+
+				case "OBDĹŽNIK":
+					this.režimKreslenia = RežimKresleniaLinky.OBDĹŽNIK;
+					break;
+
+				case "VLASTNÝ_TVAR":
+					this.režimKreslenia = RežimKresleniaLinky.VLASTNÝ_TVAR;
+
+					preevidujTvar(súbor.čítajVlastnosť(
+						"názovTvaru", (String)null), false, transformácieTvaru);
+
+					// TODO del (testy)
+					// System.out.println("Použi transformácie tvaru: " +
+					// 	transformácieTvaru);
+
+					if (null == názovTvaru) this.režimKreslenia = null;
+					break;
+
+				default: this.režimKreslenia = null; break;
 				}
 			}
 
@@ -1779,6 +2152,29 @@ public class Linka extends GRobot implements Činnosť
 				zobrazInformácie = null == hodnota ? true : hodnota;
 			}
 
+			// TODO del
+			/*{
+				Boolean hodnota = súbor.čítajVlastnosť(
+					"zarovnávajPolohu", (Boolean)false);
+				zarovnávajPolohu = null == hodnota ? false : hodnota;
+			}
+
+			{
+				Boolean hodnota = súbor.čítajVlastnosť(
+					"zarovnávajRozmery", (Boolean)false);
+				zarovnávajRozmery = null == hodnota ? false : hodnota;
+			}
+
+			{
+				Boolean hodnota = súbor.čítajVlastnosť(
+					"zarovnávajUhol", (Boolean)false);
+				zarovnávajUhol = null == hodnota ? false : hodnota;
+			}*/
+
+			označená = false;
+			bliká = 0;
+			klik = 0;
+			myš = null;
 			čas = Systém.čas;
 			if (jeEmitor()) čas += interval();
 			vyraďZákazníkov();
@@ -1865,39 +2261,50 @@ public class Linka extends GRobot implements Činnosť
 	@Override public boolean myšV()
 	{
 		if (neaktívny()) return false;
-		if (TvarLinky.ELIPSA != tvar) return myšVObdĺžniku();
+		if (RežimKresleniaLinky.ELIPSA != režimKreslenia)
+			return myšVObdĺžniku();
 		return myšVElipse();
 	}
 
 	@Override public boolean bodV(Poloha bod)
 	{
 		if (neaktívny()) return false;
-		if (TvarLinky.ELIPSA != tvar) return bodVObdĺžniku(bod);
+		if (RežimKresleniaLinky.ELIPSA != režimKreslenia)
+			return bodVObdĺžniku(bod);
 		return bodVElipse(bod);
 	}
 
 	@Override public void klik()
 	{
+		if (neaktívny()) return;
+
 		if (tlačidloMyši(ĽAVÉ))
 		{
-			if (myš().isControlDown())
+			if (myš().isControlDown() || myš().isShiftDown())
 			{
 				if (myšV()) prepniOznačenie();
 			}
-			else if (!myš().isAltDown() && !myš().isShiftDown())
+			else if (!myš().isAltDown())
 			{
-				označ(myšV());
+				klik = 5;
+				myš = myš();
 			}
 		}
 		else if (tlačidloMyši(PRAVÉ))
 		{
-			if (myšV()) kontextováPonuka.zobraz();
+			if (myšV())
+			{
+				klik = 5;
+				myš = myš();
+			}
 		}
 	}
 
 
 	@Override public void stlačenieTlačidlaMyši()
 	{
+		if (neaktívny()) return;
+
 		ťaháSa = false;
 		if (tlačidloMyši(ĽAVÉ) && !myš().isShiftDown() &&
 			!myš().isAltDown() && !myš().isControlDown())
@@ -1952,12 +2359,30 @@ public class Linka extends GRobot implements Činnosť
 				upravujeSa = this;
 				typÚprav = 4; // ^ pozri hore ^
 			}
-			else ťaháSa = myšV() || (aktívny() && označená);
+			else if (myšV())
+			{
+				ťaháSa = true;
+			}
+			else if (označená)
+			{
+				for (Linka linka : linky) if (this != linka &&
+					linka.aktívny() && linka.myšV())
+				{
+					ťaháSa = true;
+					break;
+				}
+			}
+
+			// Linka, ktorá zaznamená začatie jej úprav odošle príkaz
+			// na zrušenie globálnych úprav:
+			if (null != upravujeSa || ťaháSa) vyzviRoboty();
 		}
 	}
 
 	@Override public void ťahanieMyšou()
 	{
+		if (neaktívny()) return;
+
 		if (this == upravujeSa)
 		{
 			Bod p1 = poslednáPolohaMyši();
@@ -2050,9 +2475,11 @@ public class Linka extends GRobot implements Činnosť
 
 	@Override public void uvoľnenieTlačidlaMyši()
 	{
+		if (neaktívny()) return;
+
 		if (this == upravujeSa)
 		{
-			switch (typÚprav)
+			/* TODO del switch (typÚprav)
 			{
 			case 0: // meniťŠírku
 				if (Systém.prichytávajKRozmeru())
@@ -2091,17 +2518,17 @@ public class Linka extends GRobot implements Činnosť
 					aktualizujZaoblenie(); aktualizujSpojnice();
 				}
 				break;
-			}
+			}*/
 			upravujeSa = null;
 		}
 		else if (ťaháSa)
 		{
-			if (Systém.prichytávajKPolohe())
+			/* TODO del if (Systém.prichytávajKPolohe())
 			{
 				double Πx = Systém.mriežkaX(), Πy = Systém.mriežkaY();
 				posuňAjZákazníkov(floor(polohaX() / Πx) * Πx - polohaX(),
 					floor(polohaY() / Πy) * Πy - polohaY());
-			}
+			}*/
 
 			ťaháSa = false;
 		}
@@ -2109,6 +2536,8 @@ public class Linka extends GRobot implements Činnosť
 
 	@Override public void voľbaKontextovejPoložky()
 	{
+		if (neaktívny()) return;
+
 		if (položkaUpravPopis.zvolená()) upravPopis();
 		else if (položkaZrušÚčel.zvolená()) zrušÚčel();
 		else if (položkaZmeňNaEmitor.zvolená()) zmeňNaEmitor();
@@ -2125,6 +2554,15 @@ public class Linka extends GRobot implements Činnosť
 		else if (položkaUpravVizuály.zvolená()) upravVizuály();
 		else if (položkaPrepniInformácie.zvolená())
 			prepniZobrazenieInformácií();
+
+		// TODO del
+		// else if (položkaPrepniZarovnaniePolohy.zvolená())
+		// 	prepniZarovnávaniePolohy();
+		// else if (položkaPrepniZarovnanieRozmerov.zvolená())
+		// 	prepniZarovnávanieRozmerov();
+		// else if (položkaPrepniZarovnanieUhla.zvolená())
+		// 	prepniZarovnávanieUhla();
+
 		else if (položkaVymaž.zvolená()) vymaž();
 	}
 
@@ -2163,47 +2601,184 @@ public class Linka extends GRobot implements Činnosť
 		poloha(p);
 	}
 
+	// TODO del – ďalšie testy
+	// private final static java.awt.Image testovacíObrázok =
+	// 	Obrázok.čítaj("vlastnýTvar.png");
+
 	@Override public void kresliTvar()
 	{
+		if (neaktívny()) return;
+
+		// šedá      – bez účelu
+		// modrá     – generuje zákazníkov
+		// fialová   – zhromažďuje zákazníkov
+		// tyrkysová – zhromažďuje zákazníkov s mierou trpezlivosti
+		// hnedá     – prepravuje zákazníkov medzi linkami
+		// oranžová  – transformuje (mení, spracúva) zákazníkov
+		// zelená    – uvoľňuje zákazníkov (definitívne ich vybavuje)
+
+		// TODO — odstrániť ten nezmysel so zarovnávaním, to bola slepá ulička
 		/*
-		šedá      – bez účelu
-		modrá     – generuje zákazníkov
-		fialová   – zhromažďuje zákazníkov
-		tyrkysová – zhromažďuje zákazníkov s mierou trpezlivosti
-		hnedá     – prepravuje zákazníkov medzi linkami
-		oranžová  – transformuje (mení, spracúva) zákazníkov
-		zelená    – uvoľňuje zákazníkov (definitívne ich vybavuje)
-		*/
+		// Zálohy pred zarovnávaním:
+		Poloha poloha = poloha(); double veľkosť = veľkosť(),
+		pomer = pomer(), uhol = uhol(); try {
 
-		Farba farba = šedá;
-		if (null != účel) switch (účel)
-		{
-		case EMITOR: farba = modrá; break;
-		case ZÁSOBNÍK: farba = fialová; break;
-		case ČAKÁREŇ: farba = tyrkysová; break;
-		case DOPRAVNÍK: farba = hnedá; break;
-		case MENIČ: farba = oranžová; break;
-		case UVOĽŇOVAČ: farba = zelená; break;
-		}
+			// Zarovnania:
 
-		farba(farba);
-
-		if (TvarLinky.ELIPSA != tvar)
-		{
-			if (TvarLinky.INÝ_TVAR == tvar && null != tvarTvaru)
+			if (zarovnávajPolohu)
 			{
-				// TODO dokončiť
-				kresliTvar(tvarTvaru, true);
+				// TODO (test)
+				double Πx = mriežkaX(), Πy = mriežkaY();
+				skočNa(floor(polohaX() / Πx) * Πx,
+					floor(polohaY() / Πy) * Πy);
+			}
+
+			if (zarovnávajRozmery)
+			{
+				// TODO (test)
+				double Πšírka = mriežkaŠírka(), Πvýška = mriežkaVýška();
+				rozmery(
+					floor(šírka() / (2 * Πšírka)) * (2 * Πšírka),
+					floor(výška() / (2 * Πvýška)) * (2 * Πvýška))
+				if (šírka() != poslednáŠírka || výška() != poslednáVýška)
+				{
+					aktualizujZaoblenie();
+					aktualizujSpojnice();
+					poslednáŠírka = šírka();
+					poslednáVýška = výška();
+				}
+			}
+
+			if (zarovnávajUhol)
+			{
+				// TODO (test)
+				double Πuhol = mriežkaUhol();
+			}*/
+
+		// Kreslenie základného tvaru:
+		if (0 == bliká || 0 == (bliká / 2) % 2)
+		{
+			Farba farba = šedá;
+			if (null != účel) switch (účel)
+			{
+			case EMITOR: farba = modrá; break;
+			case ZÁSOBNÍK: farba = fialová; break;
+			case ČAKÁREŇ: farba = tyrkysová; break;
+			case DOPRAVNÍK: farba = hnedá; break;
+			case MENIČ: farba = oranžová; break;
+			case UVOĽŇOVAČ: farba = zelená; break;
+			}
+
+			farba(farba);
+
+			if (RežimKresleniaLinky.ELIPSA != režimKreslenia)
+			{
+				if (RežimKresleniaLinky.VLASTNÝ_TVAR == režimKreslenia &&
+					null != tvarTvaru)
+				{
+					if (početČiarObrysu > 1)
+					{
+						// Záloha pred kreslením viacerých čiar obrysu:
+						double veľkosťB = veľkosť(), pomerB = pomer();
+
+						try
+						{
+							double š = šírka() - (2 * rozostupyČiarObrysu),
+								v = výška() - (2 * rozostupyČiarObrysu);
+
+							for (int i = 0; i < početČiarObrysu &&
+								š >= 0 && v >= 0; ++i,
+								š -= (2 * rozostupyČiarObrysu),
+								v -= (2 * rozostupyČiarObrysu))
+							{
+								kresliTvar(tvarTvaru, true);
+								// trojzubec(); // TODO del (testovanie)
+								// obrázok("vlastnýTvar.png");
+								// obrázok(testovacíObrázok);
+								rozmery(š, v);
+							}
+						}
+						finally
+						{
+							veľkosť(veľkosťB);
+							pomer(pomerB);
+						}
+					}
+					else if (1 == početČiarObrysu)
+					{
+						kresliTvar(tvarTvaru, true);
+						// trojzubec(); // TODO del (testovanie)
+						// obrázok("vlastnýTvar.png");
+						// obrázok(testovacíObrázok);
+					}
+				}
+				else
+				{
+					double š = šírka() / 2, v = výška() / 2;
+
+					for (int i = 0; i < početČiarObrysu
+						&& š >= 0 && v >= 0; ++i,
+						š -= rozostupyČiarObrysu,
+						v -= rozostupyČiarObrysu)
+					{
+						zaoblenie(min(š, v) * mieraZaoblenia);
+						obdĺžnik(š, v);
+					}
+				}
 			}
 			else
 			{
 				double š = šírka() / 2, v = výška() / 2;
 				for (int i = 0; i < početČiarObrysu && š >= 0 && v >= 0;
 					++i, š -= rozostupyČiarObrysu, v -= rozostupyČiarObrysu)
-					obdĺžnik(š, v);
+					elipsa(š, v);
 			}
 
-			hrúbkaČiary(0.5);
+			if (0 != časovač)
+			{
+				skoč(veľkosť() + 10);
+				zaoblenie(0);
+				vyplňObdĺžnik((šírka() / 2.0) * max(0,
+					(čas - Systém.čas) / časovač), 6);
+				odskoč(veľkosť() + 10);
+			}
+
+			if (null != popis)
+			{
+				if (null != riadkyPopisu)
+				{
+					Poloha p = poloha();
+					if (popisPod)
+						odskoč((výškaRiadka() + výška()) / 2);
+					else
+						skoč(((riadkyPopisu.length - 1) *
+							výškaRiadka()) / 2);
+					double skok = výškaRiadka();
+					for (String riadokPopisu : riadkyPopisu)
+					{
+						text(riadokPopisu);
+						odskoč(skok);
+					}
+					poloha(p);
+				}
+				else
+				{
+					if (popisPod)
+					{
+						Poloha p = poloha();
+						odskoč((výškaRiadka() + výška()) / 2);
+						text(popis);
+						poloha(p);
+					}
+					else text(popis);
+				}
+			}
+		}
+
+		// Kreslenie súvisiace s označením a rôznymi UI aktivitami linky:
+		hrúbkaČiary(0.5);
+		if (RežimKresleniaLinky.ELIPSA != režimKreslenia)
+		{
 			if (Systém.jeZačiatokKonektora(this))
 			{
 				obdĺžnik(šírka() / 2 + 4.4, výška() / 2 + 4.4);
@@ -2217,15 +2792,10 @@ public class Linka extends GRobot implements Činnosť
 			}
 			else if (ťaháSa)
 				obdĺžnik(šírka() / 2 - 1.5, výška() / 2 - 1.5);
+			else if (this == upravujeSa) kresliZnačkyÚprav();
 		}
 		else
 		{
-			double š = šírka() / 2, v = výška() / 2;
-			for (int i = 0; i < početČiarObrysu && š >= 0 && v >= 0;
-				++i, š -= rozostupyČiarObrysu, v -= rozostupyČiarObrysu)
-				elipsa(š, v);
-
-			hrúbkaČiary(0.5);
 			if (Systém.jeZačiatokKonektora(this))
 			{
 				elipsa(šírka() / 2 + 4.4, výška() / 2 + 4.4);
@@ -2239,50 +2809,18 @@ public class Linka extends GRobot implements Činnosť
 			}
 			else if (ťaháSa)
 				elipsa(šírka() / 2 - 1.5, výška() / 2 - 1.5);
+			else if (this == upravujeSa) kresliZnačkyÚprav();
 		}
 
-		if (0 != časovač)
-		{
-			skoč(veľkosť() + 10);
-			zaoblenie(0);
-			vyplňObdĺžnik((šírka() / 2.0) * max(0,
-				(čas - Systém.čas) / časovač), 6);
-			odskoč(veľkosť() + 10);
-		}
-
-		if (null != popis)
-		{
-			if (null != riadkyPopisu)
-			{
-				Poloha p = poloha();
-				if (popisPod)
-					odskoč((výškaRiadka() + výška()) / 2);
-				else
-					skoč(((riadkyPopisu.length - 1) * výškaRiadka()) / 2);
-				double skok = výškaRiadka();
-				for (String riadokPopisu : riadkyPopisu)
-				{
-					text(riadokPopisu);
-					odskoč(skok);
-				}
-				poloha(p);
-			}
-			else
-			{
-				if (popisPod)
-				{
-					Poloha p = poloha();
-					odskoč((výškaRiadka() + výška()) / 2);
-					text(popis);
-					poloha(p);
-				}
-				else text(popis);
-			}
-		}
+		// „Kreslenie“ (alias výpis) informácií:
 
 		{ Písmo písmo = písmo(); try { písmo(hlavnýRobot().písmo());
 
 		skoč(10 + veľkosť() * pomer(), veľkosť() - výškaRiadka() / 2.0);
+
+			/* farba(fialová); // TODO del (ladenie)
+			text(S("Bliká: ", bliká), KRESLI_PRIAMO);
+			skoč(0, -1 * výškaRiadka()); */
 
 		if (zobrazTypy || zobrazHladiny)
 		{
@@ -2318,8 +2856,8 @@ public class Linka extends GRobot implements Činnosť
 				switch (size)
 				{
 				case 0: if (null == účel) skoč(0, výškaRiadka()); else
-					text("Voľný", KRESLI_PRIAMO); break;
-				case 1: text("Obsadený", KRESLI_PRIAMO); break;
+					text("Voľná", KRESLI_PRIAMO); break;
+				case 1: text("Obsadená", KRESLI_PRIAMO); break;
 				default: text(S("Obsadenosť: ", size), KRESLI_PRIAMO);
 				}
 				skoč(0, -výškaRiadka());
@@ -2389,6 +2927,10 @@ public class Linka extends GRobot implements Činnosť
 		}
 
 		} finally { písmo(písmo); }}
+
+		// TODO — odstrániť ten nezmysel so zarovnávaním, to bola slepá ulička
+		/*// Návrat do stavu pred zarovnaním:
+		} finally { veľkosť(veľkosť); pomer(pomer); uhol(uhol); }*/
 	}
 
 	@Override public void aktivácia()
@@ -2406,6 +2948,44 @@ public class Linka extends GRobot implements Činnosť
 		skry();
 	}
 
+
+	@Override public void tik()
+	{
+		if (bliká > 0)
+		{
+			--bliká;
+			žiadajPrekreslenie();
+		}
+
+		if (klik > 0 && 0 >= --klik && null != myš)
+		{
+			if (ĽAVÉ == myš.getButton())
+			{
+				if (myš.getClickCount() > 1)
+				{
+					if (myšV())
+					{
+						blikni();
+						Svet.vykonaťNeskôr(() -> upravKoeficienty());
+					}
+				}
+				else
+				{
+					označ(myšV());
+				}
+			}
+			else
+			{
+				blikni();
+				if (myš.getClickCount() > 1)
+					Svet.vykonaťNeskôr(() -> upravVizuály());
+				else
+					Svet.vykonaťNeskôr(() -> kontextováPonuka.zobraz());
+			}
+
+			myš = null;
+		}
+	}
 
 	@Override public boolean činnosť()
 	{

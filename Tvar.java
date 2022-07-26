@@ -1,18 +1,45 @@
 
 import java.awt.Shape;
+import java.awt.geom.Rectangle2D;
+import java.awt.geom.AffineTransform;
+
 import java.io.IOException;
+
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
+
 import knižnica.*;
 
 public class Tvar
 {
+	private static AffineTransform[] transformácie = new AffineTransform[15];
+	static
+	{
+		transformácie[0] = AffineTransform.getScaleInstance(-1, 1);
+		transformácie[1] = AffineTransform.getScaleInstance(1, -1);
+		transformácie[2] = AffineTransform.getScaleInstance(-1, -1);
+
+		for (int i = 0; i < 3; ++i)
+		{
+			int j = -1 - i;
+			transformácie[3 + i * 4] =
+				AffineTransform.getQuadrantRotateInstance(j);
+			transformácie[4 + i * 4] = AffineTransform.getScaleInstance(-1, 1);
+			transformácie[4 + i * 4].quadrantRotate(j);
+			transformácie[5 + i * 4] = AffineTransform.getScaleInstance(1, -1);
+			transformácie[5 + i * 4].quadrantRotate(j);
+			transformácie[6 + i * 4] = AffineTransform.getScaleInstance(-1, -1);
+			transformácie[6 + i * 4].quadrantRotate(j);
+		}
+	}
+
 	private static class Záznam
 	{
 		String cesta = null;
 		int použitie = 0;
-		Shape tvar = null;
+		Shape[] tvary = null;
+		Obrázok obrázok = null;
 	}
 
 	private final static TreeMap<String, Záznam> tvary = new TreeMap<>();
@@ -28,7 +55,9 @@ public class Tvar
 			// String názov = tvar.getKey();
 			Záznam záznam = tvar.getValue();
 			záznam.cesta = null;
-			záznam.tvar = null;
+			záznam.tvary = null;
+			Svet.uvoľni(záznam.obrázok);
+			záznam.obrázok = null;
 		}
 		tvary.clear();
 	}
@@ -39,6 +68,7 @@ public class Tvar
 		for (Map.Entry<String, Záznam> tvar : tvary.entrySet())
 		{
 			String názov = tvar.getKey();
+			// Záznam záznam = tvar.getValue();
 			vektor.add(názov);
 		}
 		String zoznam[] = new String[vektor.size()];
@@ -47,6 +77,71 @@ public class Tvar
 		return zoznam;
 	}
 
+	public static void naplňZoznamObrázkov(Vector<Obrázok> zoznam)
+	{
+		for (Map.Entry<String, Záznam> tvar : tvary.entrySet())
+		{
+			// String názov = tvar.getKey();
+			Záznam záznam = tvar.getValue();
+			zoznam.add(záznam.obrázok);
+		}
+	}
+
+	/* TODO asi vymaž (množno bude treba v budúcnosti?)
+	public static int indexNázvu(String hľadanýNázov)
+	{
+		int i = 0;
+		if (null == hľadanýNázov)
+			for (Map.Entry<String, Záznam> tvar : tvary.entrySet())
+			{
+				String názov = tvar.getKey();
+				// Záznam záznam = tvar.getValue();
+				if (null == názov) return i;
+				++i;
+			}
+		else
+			for (Map.Entry<String, Záznam> tvar : tvary.entrySet())
+			{
+				String názov = tvar.getKey();
+				// Záznam záznam = tvar.getValue();
+				if (hľadanýNázov.equals(názov)) return i;
+				++i;
+			}
+		return -1;
+	}*/
+
+	public static Obrázok obrázokPodľaNázvu(String hľadanýNázov)
+	{
+		if (null == hľadanýNázov)
+			for (Map.Entry<String, Záznam> tvar : tvary.entrySet())
+			{
+				String názov = tvar.getKey();
+				Záznam záznam = tvar.getValue();
+				if (null == názov) return záznam.obrázok;
+			}
+		else
+			for (Map.Entry<String, Záznam> tvar : tvary.entrySet())
+			{
+				String názov = tvar.getKey();
+				Záznam záznam = tvar.getValue();
+				if (hľadanýNázov.equals(názov)) return záznam.obrázok;
+			}
+		return null;
+	}
+
+	public static String názovPodľaObrázka(Obrázok obrázok)
+	{
+		for (Map.Entry<String, Záznam> tvar : tvary.entrySet())
+		{
+			String názov = tvar.getKey();
+			Záznam záznam = tvar.getValue();
+			if (obrázok == záznam.obrázok) return názov;
+		}
+		return null;
+	}
+
+
+	private static GRobot kreslič;
 
 	private static Záznam vytvor(String názov, String cesta)
 	{ return vytvor(názov, cesta, false); }
@@ -61,11 +156,37 @@ public class Tvar
 		svgPodpora = new SVGPodpora();
 		if (-1 != svgPodpora.pridajSVG(svg))
 		{
-			Shape tvar = SVGPodpora.presuňDoStredu(svgPodpora.daj(0));
+			Shape[] tvary = new Shape[16];
+			tvary[0] = SVGPodpora.presuňDoStredu(svgPodpora.daj(0));
+
+			for (int i = 1; i < 16; ++i)
+			{
+				Shape transformovaný = SVGPodpora.presuňDoStredu(
+					svgPodpora.dajVýsledný(0, transformácie[i - 1]));
+				tvary[i] = transformovaný;
+			}
+
 			Záznam záznam = new Záznam();
 			záznam.cesta = cesta;
-			záznam.tvar = tvar;
-			tvary.put(názov, záznam);
+			záznam.tvary = tvary;
+			záznam.obrázok = new Obrázok(100, 100);
+			if (null == kreslič)
+			{
+				kreslič = new GRobot();
+				// kreslič.veľkosť(25);
+				// kreslič.mierka…
+				kreslič.skry();
+			}
+
+			kreslič.kresliDoObrázka(záznam.obrázok);
+			Rectangle2D hranice = záznam.tvary[0].getBounds2D();
+			double veľkosť = Math.max(hranice.getWidth(), hranice.getHeight());
+			if (veľkosť > 95) kreslič.mierka(95 / veľkosť);
+			else if (veľkosť < 55) kreslič.mierka(55 / veľkosť);
+			else kreslič.mierka(1);
+			kreslič.kresliTvar(záznam.tvary[0], true);
+
+			Tvar.tvary.put(názov, záznam);
 			return záznam;
 		}
 
@@ -145,7 +266,21 @@ public class Tvar
 	{
 		Záznam záznam = tvary.get(názov);
 		if (null == záznam) return null;
-		return záznam.tvar;
+		return záznam.tvary[0];
+	}
+
+	public static Shape daj(String názov, byte transformovaný)
+	{
+		Záznam záznam = tvary.get(názov);
+		if (null == záznam) return null;
+		if (transformovaný >= 16) transformovaný %= 16;
+		/*else if (transformovaný < 0)
+		{
+			transformovaný %= 16;
+			if (transformovaný < 0)
+				transformovaný = -transformovaný;
+		}*/
+		return záznam.tvary[transformovaný];
 	}
 
 
