@@ -305,11 +305,16 @@ public class Linka extends GRobot implements Činnosť
 	{
 		Spojnica[] spojnice = spojniceZ();
 		for (Spojnica spojnica : spojnice)
-			spojnica(spojnica.cieľ());
+			spojnica(spojnica.cieľ()); // (prekryté)
 
 		spojnice = spojniceDo();
 		for (Spojnica spojnica : spojnice)
-			spojnica.zdroj().spojnica(this);
+			spojnica.zdroj().spojnica(this); // (prekryté)
+
+		// zaraďDoHladín() – sa deje „nárazovo“ – po dokončení
+		// 	kopírovania/mazania liniek; pri vzniku novej podobnej udalosti
+		// 	treba pamätať na to, že na jej konci treba volať aj metódu
+		// 	zaraďDoHladín
 	}
 
 	private void preevidujTvar(String názov)
@@ -368,30 +373,43 @@ public class Linka extends GRobot implements Činnosť
 		popis(popis);
 		veľkosťPísma(hlavnýRobot().písmo().veľkosť());
 		popisPod = false;
+
 		označená = false;
 		bliká = 0;
 		klik = 0;
 		myš = null;
+
 		počiatočnýČas = 0.0;
 		čas = Systém.čas; // + počiatočnýČas;
+
 		produkcia = 0;
 		limit = 0;
+
 		účel = null;
+
 		časovač = 1.0;
 		rozptyl = 0.0;
 		kapacita = 10;
-		if (null != zoznamMien) zoznamMien.clear();
-		zoznamMien = null;
+
+		if (null != zoznamMien)
+		{
+			zoznamMien.clear();
+			zoznamMien = null;
+		}
 		cyklickýZoznam = true;
+
 		režimVýberuZákazníkov = RežimVýberuZákazníkov.PRVÝ;
 		režimVýberuLiniek = RežimVýberuLiniek.POSTUPNÉ;
+
 		ďalšiaSpojnica = -1;
+
 		režimKreslenia = null;
 		preevidujTvar(null);
 		mieraZaoblenia(0.5);
 		zobrazInformácie = true;
 		početČiarObrysu = 1;
 		rozostupyČiarObrysu = 2.0;
+
 		aktivuj(false);
 		zrušSpojnice();
 		vyraďZákazníkov();
@@ -421,9 +439,23 @@ public class Linka extends GRobot implements Činnosť
 		rozptyl = iná.rozptyl;
 		kapacita = iná.kapacita;
 
-		if (null != zoznamMien) zoznamMien.clear();
-		zoznamMien = null;
-		cyklickýZoznam = true;
+		if (null == iná.zoznamMien)
+		{
+			if (null != zoznamMien)
+			{
+				zoznamMien.clear();
+				zoznamMien = null;
+			}
+		}
+		else
+		{
+			if (null == zoznamMien)
+				zoznamMien = new Vector<String>();
+			else
+				zoznamMien.clear();
+			zoznamMien.addAll(iná.zoznamMien);
+		}
+		cyklickýZoznam = iná.cyklickýZoznam;
 
 		režimVýberuZákazníkov = iná.režimVýberuZákazníkov;
 		režimVýberuLiniek = iná.režimVýberuLiniek;
@@ -451,19 +483,21 @@ public class Linka extends GRobot implements Činnosť
 		{
 			Spojnica[] spojnice = iná.spojniceZ();
 			for (Spojnica spojnica : spojnice)
-				spojnica(spojnica.cieľ());
+				spojnica(spojnica.cieľ()); // (prekryté)
 		}
 
 		// Kopíruj cieľové spojnice inej linky
 		{
 			Spojnica[] spojnice = iná.spojniceDo();
 			for (Spojnica spojnica : spojnice)
-				spojnica.zdroj().spojnica(this);
+				spojnica.zdroj().spojnica(this); // (prekryté)
 		}
 
 		vyraďZákazníkov();
 		aktualizujKontextovúPonuku();
-		aktualizujSpojnice();
+		aktualizujSpojnice(); // (TODO: Nechápem, načo tu robím toto? Proces
+			// kopírovania (vyššie) robí v podstate to isté, nie? Asi to tu
+			// zostalo navyše, ale na overenie by bolo treba testy.)
 	}
 
 
@@ -717,10 +751,6 @@ public class Linka extends GRobot implements Činnosť
 		{"Upravte popis linky:", "Veľkosť písma:", "Umiestniť popis pod linku"};
 
 	public void upravPopis()
-		// TODO: Opraviť zadávanie popisov tak, aby dialóg obsahoval
-		// ScrollTextPane s aspoň tromi viditeľnými riadkami, aby bolo jasné,
-		// že popis môže byť viacriadkový. Vďaka tomu už nebude treba hľadať
-		// „escape sekvencie“ \\\n, ale priamo nové riadky.
 	{
 		stp0.setText(null == popis ? "" : popis);
 		Object[] údaje = {stp0, new Double(veľkosťPísma), popisPod};
@@ -3309,7 +3339,7 @@ public class Linka extends GRobot implements Činnosť
 			else if (this == upravujeSa) kresliZnačkyÚprav();
 		}
 
-		// „Kreslenie“ (alias výpis) informácií:
+		// „Kreslenie“ (alias výpis) informácií (o linke):
 
 		{ Písmo písmo = písmo(); try { písmo(hlavnýRobot().písmo());
 
@@ -3362,11 +3392,8 @@ public class Linka extends GRobot implements Činnosť
 				text(S("Kapacita: ", kapacita), KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 
-				text(S("Časovač: ", F(časovač, 2),
-					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2))
-					/*, (0.0 == počiatočnýČas ? "" : " (+ počiatok: " +
-						F(počiatočnýČas, 2) + ")") TODO del? */),
-					KRESLI_PRIAMO);
+				text(S("Časovač: ", F(časovač, 2), (0.0 == rozptyl ? "" :
+					" ± " + F(rozptyl, 2))), KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 
 				if (0 != limit)
@@ -3407,11 +3434,8 @@ public class Linka extends GRobot implements Činnosť
 			}
 			else if (ÚčelLinky.DOPRAVNÍK == účel)
 			{
-				text(S("Doprava: ", F(časovač, 2),
-					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2))
-					/*, (0.0 == počiatočnýČas ? "" : " (+ počiatok: " +
-						F(počiatočnýČas, 2) + ")") TODO del? */),
-					KRESLI_PRIAMO);
+				text(S("Doprava: ", F(časovač, 2), (0.0 == rozptyl ? "" :
+					" ± " + F(rozptyl, 2))), KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 			}
 			else if (ÚčelLinky.EMITOR == účel)
@@ -3443,11 +3467,8 @@ public class Linka extends GRobot implements Činnosť
 			}
 			else
 			{
-				text(S("Spracovanie: ", F(časovač, 2),
-					(0.0 == rozptyl ? "" : " ± " + F(rozptyl, 2))
-					/*, (0.0 == počiatočnýČas ? "" : " (+ počiatok: " +
-						F(počiatočnýČas, 2) + ")") TODO del? */),
-					KRESLI_PRIAMO);
+				text(S("Spracovanie: ", F(časovač, 2), (0.0 == rozptyl ? "" :
+					" ± " + F(rozptyl, 2))), KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 			}
 
@@ -3567,9 +3588,6 @@ public class Linka extends GRobot implements Činnosť
 				// a v čakárni majú zákazníci určitú mieru trpezlivosti čakania.
 
 				Zákazník zákazník = dajZákazníka();
-
-				// TODO: .dajLinku() – pozri podrobnosti v Zákazníkovi.
-
 				Boolean failed = dajLinku(zákazník, false);
 				if (null != failed) return retval = failed;
 			}
@@ -3610,10 +3628,46 @@ public class Linka extends GRobot implements Činnosť
 		}
 	};
 
-	// Tak to vyšlo, že návratovou hodnotou tejto funkcie mali byť tri stavy:
-	// Linka priradená a zákazník je zamestnaný, to isté, len nezamestnaný,
-	// žiadna voľná linka. Namiesto definovania novej enumerácie som využil
-	// objektový typ Boolean, kde tretí stav je signalizovaný hodnotou null.
+
+	// Táto metóda je kľúčová pri rozhodovaní zákazníkov a emitorov, čo ďalej,
+	// kam poslať seba (v prípade zákazníka) alebo nového vygenerovaného
+	// zákazníka (v prípade emitora). Metóda hľadá linku, ktorá je prepojená
+	// s emitorom alebo tou linkou, v ktorej sa nachádza aktuálny zákazník
+	// a ktorá je voľná. Prepojenie sa určuje podľa spojníc a hľadanie
+	// prebieha podľa stanovených priorít (pravdepodobností).
+	// 
+	// Režimy/spôsoby výberu/hľadania voľných liniek (spolu s návrhom
+	// implementácie, ktorý bol priebežne adaptovaný a optimalizovaný):
+	// 
+	//  • postupné (cyklické) prechádzanie spojení:
+	//    ◦ to, ktorou linkou sa začne hľadanie ďalšej voľnej linky určí
+	//      cyklické počítadlo;
+	//  • náhodné prechádzanie spojení vyvážené pravdepodobnosťami:
+	//    ◦ každé spojenie má hodnotu, ktorá určí váhu pravdepodobnosti, že
+	//      bude vybraná linka, do ktorej smeruje;
+	//      ▪ z hodnôt sa zostaví „pásmo,“ v ktorom je každá linka zastúpená
+	//        dĺžkou ekvivalentnou jej váhe;
+	//      ▪ algoritmus následne generuje náhodné hodnoty v rozsahu nula až
+	//        dĺžka pásma, to znamená, že každá hodnota sa zaradí niekde
+	//        v rámci pásma, čo určí linku, ktorá má byť preskúmaná (či je
+	//        voľná);
+	//      ▪ toto sa bude vykonávať, kým nebude nenájdená voľná linka,
+	//        pričom treba obsadené linky postupne zo zoznamu vyraďovať, aby
+	//        sa hľadanie nevykonávalo nekonečne dlho;
+	//  • podľa priorít – uprednostňujú sa linky s vyššou prioritou:
+	//    ◦ každé hľadanie voľnej linky sa bude vždy začínať v rovnakom
+	//      poradí, ktoré bude určené prioritami spojení.
+	// 
+	// Počas implementácie vysvitlo, že návratovou hodnotou tejto funkcie
+	// by mali byť tri stavy:
+	// 
+	//  • linka je priradená a zákazník je zamestnaný,
+	//  • to isté, len zákazník zostane nezamestnaný,
+	//  • nenašla sa žiadna voľná linka.
+	// 
+	// Namiesto definovania novej enumerácie bol využitý objektový typ
+	// Boolean, kde tretí stav je signalizovaný hodnotou null.
+	// 
 	public Boolean dajLinku(Zákazník zákazník, boolean pridajInterval)
 	{
 		Spojnica[] spojnice = spojniceZ();
@@ -3638,12 +3692,6 @@ public class Linka extends GRobot implements Činnosť
 					pásmo[i] = (rozsah += váha);
 				}
 
-				// TODO del? debug:
-				// for (int i = 0; i < spojnice.length; ++i)
-				// 	System.out.print(spojnice[i].parameter("váha") +
-				// 		" – " + spojnice[i].cieľ() + "\t");
-				// System.out.println("\nrozsah: " + rozsah);
-
 				voľba: for (int i = 0; i < spojnice.length; ++i)
 				{
 					Object o = spojnice[i].cieľ();
@@ -3652,17 +3700,10 @@ public class Linka extends GRobot implements Činnosť
 
 					double hodnota = náhodnéReálneČíslo(0, rozsah);
 
-					// TODO del? debug:
-					// System.out.println("hodnota: " + hodnota);
-
 					for (int j = 0; j < pásmo.length; ++j)
 					{
 						if (hodnota <= pásmo[j])
 						{
-							// TODO del? debug:
-							// System.out.println("  j: " + j + " < " +
-							// 	pásmo[j] + "; " + spojnice[j].cieľ());
-
 							if (cieľová.jeVoľná())
 							{
 								ďalšiaSpojnica = j;
@@ -3675,10 +3716,6 @@ public class Linka extends GRobot implements Činnosť
 				}
 			}
 			else ďalšiaSpojnica = 0;
-
-			// TODO: testovať a ladiť: je toto dobrý spôsob miešania?
-			// aké má výhody a nevýhody? naozaj to mieša tak, aby boli
-			// zachované priority?
 		}
 
 		for (int i = 0; i < spojnice.length; ++i)
@@ -3693,7 +3730,7 @@ public class Linka extends GRobot implements Činnosť
 				debug("cieľ: ", linka);
 				if (linka.evidujZákazníka(zákazník))
 				{
-					zákazník.priraďKLinke(linka);
+					zákazník.priraďKLinke(linka, true);
 
 					double interval = (linka.jeEmitor() ||
 						linka.jeZásobník()) ? 0.0 : linka.interval();
@@ -3828,11 +3865,6 @@ public class Linka extends GRobot implements Činnosť
 	{
 		if (zákazníci.isEmpty()) return null;
 
-		// TODO:
-		// 
-		// ✓ Pridať režim zásobníka/čakárne a podľa neho sa berie prvý,
-		//   posledný, náhodný… (iný?) prvok.
-
 		if (null != režimVýberuZákazníkov) switch (režimVýberuZákazníkov)
 		{
 		case POSLEDNÝ:
@@ -3864,7 +3896,7 @@ public class Linka extends GRobot implements Činnosť
 
 		if (jeVoľná())
 		{
-			zákazník.vyraďZLinky();
+			zákazník.vyraďZLinky(false);
 			zákazníci.add(zákazník);
 			return retval = true;
 		}
@@ -3892,7 +3924,7 @@ public class Linka extends GRobot implements Činnosť
 		while (!zákazníci.isEmpty())
 		{
 			Zákazník zákazník = zákazníci.lastElement();
-			zákazník.vyraďZLinky();
+			zákazník.vyraďZLinky(false);
 			zákazníci.remove(zákazník); // (pre istotu)
 		}
 

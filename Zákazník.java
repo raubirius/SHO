@@ -33,6 +33,9 @@ public class Zákazník extends GRobot implements Činnosť
 
 	private String meno = null;
 
+	// Priebeh vybavovania:
+	private final CestaZákazníka cesta = new CestaZákazníka();
+
 
 	// Konštruktor musí byť súkromný, aby sa dali recyklovať neaktívni
 	// zákazníci (poznámka: funkciu getInstance plní metóda nový):
@@ -56,13 +59,13 @@ public class Zákazník extends GRobot implements Činnosť
 	{
 		if (null == vLinke)
 		{
-			vyraďZLinky();
+			vyraďZLinky(false);
 			domov();
 		}
 		else
 		{
 			if (vLinke.evidujZákazníka(this))
-				priraďKLinke(vLinke);
+				priraďKLinke(vLinke, false);
 			skočNa(vLinke);
 		}
 
@@ -81,6 +84,9 @@ public class Zákazník extends GRobot implements Činnosť
 		meno = null;
 		odchádza = false;
 		aktivuj(false);
+
+		cesta.clear();
+		cesta.add(new BodCesty(this.vLinke));
 	}
 
 
@@ -164,7 +170,11 @@ public class Zákazník extends GRobot implements Činnosť
 	}
 
 	public String meno() { return meno; }
-	public Zákazník pomenuj(String meno) { this.meno = meno; return this; }
+	public Zákazník pomenuj(String meno)
+	{
+		cesta.meno = this.meno = meno;
+		return this;
+	}
 
 
 	// Statická časť (zväčša súvisiaca s evidenciou):
@@ -235,7 +245,7 @@ public class Zákazník extends GRobot implements Činnosť
 		for (Zákazník zákazník : zákazníci)
 			if (zákazník.aktívny())
 			{
-				zákazník.vyraďZLinky();
+				zákazník.vyraďZLinky(false);
 				zákazník.deaktivuj();
 			}
 	}
@@ -324,33 +334,6 @@ public class Zákazník extends GRobot implements Činnosť
 
 				if (smerujeDoCieľa()) skočNaCieľ();
 
-				// TODO: .dajLinku(), ktorá je voľná – čo sa určuje podľa
-				// spojníc a podľa stanovených priorít (pravdepodobností).
-				// 
-				// Režimy:
-				// 
-				//  • postupné (cyklické) prechádzanie spojení
-				//    ◦ to, ktorou linkou sa začne hľadanie ďalšej voľnej
-				//      linky určuje cyklické počítadlo;
-				//  • náhodné prechádzanie spojení vyvážené pravdepodobnosťami
-				//    ◦ každé spojenie má hodnotu, ktorá určí váhu
-				//      pravdepodobnosti, že bude vybraná linka, do ktorej
-				//      smeruje;
-				//      ▪ z hodnôt sa zostaví „pásmo,“ v ktorom je každá linka
-				//        zastúpená dĺžkou ekvivalentnou jej váhe;
-				//      ▪ algoritmus následne generuje náhodné hodnoty
-				//        v rozsahu nula až dĺžka pásma, to znamená, že každá
-				//        hodnota sa zaradí niekde v rámci pásma, čo určí
-				//        linku, ktorá má byť preskúmaná (či je voľná);
-				//      ▪ toto sa vykonáva, kým sa nenájde voľná linka,
-				//        pričom treba obsadené linky postupne zo zoznamu
-				//        vyraďovať, aby sa hľadanie nevykonávalo nekonečne
-				//        dlho;
-				//  • podľa priorít – uprednostňujúce linky s vyššou prioritou
-				//    ◦ každé hľadanie voľnej linky sa vždy začína v rovnakom
-				//      poradí, ktoré je určené prioritami spojení.
-				// 
-
 				Boolean failed = vLinke.dajLinku(this, true);
 				if (null != failed) return retval = failed;
 
@@ -407,13 +390,14 @@ public class Zákazník extends GRobot implements Činnosť
 				Systém.zoznamOdídených.add(meno);
 		}
 
-		vyraďZLinky();
+		vyraďZLinky(true);
 
 		zrýchlenie(0, false);
 		rýchlosť(0, false);
 
 		trvanieAktivity(50);
 		odchádza = true;
+		cesta.bolSpokojný = false;
 
 		náhodnýSmer();
 		skoč();
@@ -433,7 +417,7 @@ public class Zákazník extends GRobot implements Činnosť
 				vLinke.pridajMeno(meno);
 		}
 
-		vyraďZLinky();
+		vyraďZLinky(true);
 		deaktivuj();
 
 		} finally { debugOut(); }
@@ -443,17 +427,18 @@ public class Zákazník extends GRobot implements Činnosť
 	// (Jednak to má návratovú hodnotu boolean, ktorú treba zachytávať
 	// a jednak je táto metóda použitá viackrát v tejto triede v takých
 	// situáciách, kedy volanie „evidujZákazníka“ nie je vyhovujúce.)
-	public void priraďKLinke(Linka vLinke)
+	public void priraďKLinke(Linka vLinke, boolean evidujBodCesty)
 	{
 		try { debugIn(vLinke, " (", this, ")");
 
-		vyraďZLinky();
+		vyraďZLinky(false);
 		this.vLinke = vLinke;
+		if (evidujBodCesty) cesta.add(new BodCesty(this.vLinke));
 
 		} finally { debugOut("this.vLinke: ", this.vLinke); }
 	}
 
-	public void vyraďZLinky()
+	public void vyraďZLinky(boolean evidujBodCesty)
 	{
 		try { debugIn("(", this, ")");
 
@@ -462,6 +447,7 @@ public class Zákazník extends GRobot implements Činnosť
 			vLinke.odoberZákazníka(this);
 			vLinke = null;
 		}
+		if (evidujBodCesty) cesta.add(new BodCesty(this.vLinke));
 
 		} finally { debugOut("this.vLinke: ", this.vLinke); }
 	}

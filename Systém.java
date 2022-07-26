@@ -26,13 +26,8 @@ Dohoda:
 TODO:
 
  • Sledovať rôzne parametre simulácie: najdlhšiu trasu zákazníka, najdlhší
-   čas obsluhy zákazníka… Na to bude treba ukladať cestu zákazníka s časmi
-   pozastavení.
-
- • Určiť, ktoré funkcie nastavia príznak „zmenené“ (posunutie pohľadu nie;
-   posunutie linky áno) a aplikovať tento príznak do systému save/load. To
-   isté platí pre systém undo/redo (nemá zmysel vracať alebo opakovať
-   posunutie pohľadu).
+   čas obsluhy zákazníka… Na to bude treba:
+    ◦ Ukladať cestu zákazníka s časmi pozastavení.
 
  • Spustiť simuláciu do určitého času a zozbierať výsledky. Urobiť to
    niekoľkokrát a zhromaždiť výsledky do tabuľky.
@@ -42,9 +37,32 @@ TODO:
  • Automatické zastavenie simulácie po vygenerovaní alebo vybavení (záleží
    od nastavenia) určitého počtu zákazníkov.
 
+———
+ • Určiť, ktoré funkcie nastavia príznak „zmenené“ (posunutie pohľadu nie;
+   posunutie linky áno) a aplikovať tento príznak do systému save/load. To
+   isté platí pre systém undo/redo (nemá zmysel vracať alebo opakovať
+   posunutie pohľadu).
+ | 
+ • Implementovať príznak „zmenené“ aplikovateľný systémom save/load.
+ ¦ 
  • Dokončiť funkcie undo/redo.
+———
 
  • Kopírovanie do schránky vo formáte SVG/PNG. Export do týchto formátov.
+
+ • Pravidelne kontrolovať správnosť mnemotechniky položiek ponuky.
+
+ • Zvážiť lokalizáciu do iných jazykov.
+
+ ? Vyrobiť normálne rozdelenie mikroalgoritmom Galtonovej dosky.
+
+ ✓ Opraviť zadávanie popisov tak, aby dialóg obsahoval ScrollTextPane
+   s aspoň tromi viditeľnými riadkami, aby bolo jasné, že popis môže byť
+   viacriadkový. Vďaka tomu už nebude treba hľadať „escape sekvencie“ \\\n,
+   ale priamo nové riadky.
+
+ ✓ Pridať režim zásobníka/čakárne a podľa neho sa berie prvý, posledný
+   alebo náhodný prvok.
 
  ✓ Možnosť nastavenia limitu zákazníkov pre emitor, ktoré smie vygenerovať
    od spustenia simulácie.
@@ -155,6 +173,10 @@ public class Systém extends GRobot
 	// Globálny čas a rôzne príznaky a parametre:
 	public static double čas = 0;
 	public static double dilatácia = 1.0;
+
+	private static double jednotkaČasu = 0.040; // predvolene 40 ms (či sa to
+		// bude meniť, to je otázne; zmena rýchlosti plynutia času je predsa
+		// už umožnená koeficientom dilatácia)
 
 	private static int klik = 0;
 	private static MouseEvent myš = null;
@@ -404,12 +426,16 @@ public class Systém extends GRobot
 			PoložkaPonuky redoItem = pridajPoložkuPonuky("Znova", VK_O);
 			redoItem.príkaz(redo);
 
-			// TODO: vymaž po implementácií príkazov undo/redo.
+			// TODO: vymaž po implementácii príkazov undo/redo.
 			undoItem.setEnabled(false);
 			redoItem.setEnabled(false);
-		}
 
-		pridajOddeľovačPonuky();
+			undoItem.setVisible(false);
+			redoItem.setVisible(false);
+
+			// TODO: povoľ po implementácii príkazov undo/redo.
+			// pridajOddeľovačPonuky();
+		}
 
 		pridajPoložkuPonuky("Označ všetky linky", VK_A).príkaz(selectAll);
 		pridajPoložkuPonuky("Zruš označenie linek", VK_R).príkaz(deselectAll);
@@ -499,7 +525,7 @@ public class Systém extends GRobot
 			VK_K).príkaz(editParams);
 
 		pridajPoložkuPonuky("Uprav zoznamy mien zákazníkov označených…",
-			VK_Z).príkaz(editNames); // TODO skontrolovať mnemotechniku
+			VK_Z).príkaz(editNames);
 
 		pridajOddeľovačPonuky();
 
@@ -555,7 +581,7 @@ public class Systém extends GRobot
 		pridajPoložkuPonuky("Rýchlosť plynutia času…",
 			VK_C).príkaz(setTimer);
 		položkaPrepniInformácie = pridajPoložkuPonuky(
-			"Prepni zobrazenie informácií", VK_I);
+			"Prepni zobrazenie informácií simulácie", VK_I);
 		položkaPrepniInformácie.príkaz(toggleInfo);
 		položkaPrepniInformácie.ikona(zobrazInformácie ?
 			ikonaOznačenia : ikonaNeoznačenia);
@@ -603,7 +629,13 @@ public class Systém extends GRobot
 
 
 		// Druhá časť (globálnej) inicializácie:
-		spustiČasomieru();
+		// spustiČasomieru(); // TODO: Všade vymazať a poznačiť príčinu:
+			// 
+			// Čas nesmie byť braný zo systému! Simulácia musí mať vlastný čas
+			// (aj keď nebude „skutočný“) a tento čas bude pribúdať (rovnako
+			// ako to bolo doteraz) podľa zvolenej rýchlosti simulácie (len
+			// to bude po pevných časových krokoch – jednotkách)…
+			// 
 		spustiČasovač();
 
 		// Nastavenie predvolenej cesty dialógov nastavujeme až tu, aby sa
@@ -742,10 +774,11 @@ public class Systém extends GRobot
 
 	public static void mennýZoznamOdídených()
 	{
+		// TODO: Nejako to zle robí tieto zoznamy – opraviť.
 		if (zoznamOdídených.isEmpty()) stp1.setText(""); else
 		{
 			StringBuffer zlúčenieZoznamu = null;
-	
+
 			for (String meno : zoznamOdídených)
 			{
 				if (null == zlúčenieZoznamu)
@@ -756,10 +789,10 @@ public class Systém extends GRobot
 					zlúčenieZoznamu.append(meno);
 				}
 			}
-	
+
 			if (null == zlúčenieZoznamu)
 				zlúčenieZoznamu = new StringBuffer();
-	
+
 			stp1.setText(zlúčenieZoznamu.toString());
 		}
 
@@ -900,7 +933,7 @@ public class Systém extends GRobot
 		položkaKrok.setEnabled(krokuj);
 	}
 
-	private static void krokuj(boolean pauza)
+	private static void krokuj(boolean krokuj)
 	{
 		Systém.krokuj = krokuj;
 		rekrokuj();
@@ -1475,7 +1508,7 @@ public class Systém extends GRobot
 
 	public void runPause()
 	{
-		if (pauza) spustiČasomieru();
+		// if (pauza) spustiČasomieru(); // TODO (del)
 		pauza(!pauza);
 	}
 
@@ -1520,7 +1553,7 @@ public class Systém extends GRobot
 			"Potvrdenie reštartu"))
 		{
 			resetSimulácie();
-			spustiČasomieru();
+			// spustiČasomieru(); // TODO (del)
 			pauza(false);
 		}
 	}
@@ -2022,14 +2055,18 @@ public class Systém extends GRobot
 		int brzda;
 		if (debugOn || krokuj)
 		{
-			čas += 0.15;
+			čas += jednotkaČasu // TODO: Možno kvôli tomuto by sa mohlo
+				// umožniť zmeniť jednotku času.
+				* dilatácia; // (pridané)
+			// čas += 0.15; // (stará konštanta – 150 ms)
 			if (debugOn) System.out.println("\nkrok(" + čas + ")");
 			brzda = 1;
 		}
 		else
 		{
 			if (pauza) return;
-			čas += zastavČasomieru() * dilatácia;
+			čas += jednotkaČasu // zastavČasomieru() // TODO (del)
+				* dilatácia;
 			brzda = 100_000;
 		}
 
@@ -2050,7 +2087,7 @@ public class Systém extends GRobot
 
 		if (Zákazník.žiadnyAktívny() && Linka.žiadnyAktívnyEmitor())
 		{
-			// TODO otestuj! — zastavuje simuláciu…
+			// Zastavuje simuláciu, keď už „nie je čo riešiť“…
 			pauza(true);
 		}
 	}
@@ -2128,7 +2165,7 @@ public class Systém extends GRobot
 
 		if (!debugOn && !krokuj) krok();
 		if (neboloPrekreslené()) prekresli();
-		spustiČasomieru();
+		// spustiČasomieru(); // TODO (del)
 	}
 
 
@@ -2156,9 +2193,12 @@ public class Systém extends GRobot
 		try { Tvar.ulož(súbor); }
 		catch (Throwable t) { t.printStackTrace(); }
 
+		súbor.zapíšPrázdnyRiadokVlastností();
 		Linka[] linky = Linka.daj();
 		int početLiniek = 0;
-		súbor.zapíšVlastnosť("početLiniek", početLiniek);
+		súbor.zapíšVlastnosť("početLiniek", početLiniek); // (zapíše nulu,
+			// ale nižšie je to prekryté; tento zápis je len skrz polohu
+			// vlastnosti v rámci konfiguračného súboru – „kozmetická úprava“)
 		Vector<Linka> zapísané = new Vector<>();
 
 		for (int i = 0; i < linky.length; ++i)
@@ -2173,7 +2213,8 @@ public class Systém extends GRobot
 		}
 
 		súbor.zapíšPrázdnyRiadokVlastností();
-		súbor.zapíšVlastnosť("početLiniek", početLiniek);
+		súbor.zapíšVlastnosť("početLiniek", početLiniek); // (prepíše nulu
+			// zapísanú vyššie)
 
 		for (Linka linka : zapísané) linka.uložSpojnice(súbor);
 

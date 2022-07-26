@@ -3,10 +3,39 @@ import java.util.Vector;
 
 public class História
 {
+	public static class ÚdajeSpojnice
+	{
+		// TODO:
+		// Vytváranie/rušenie spojníc potrebuje unikátne ID liniek. Pri
+		// čítaní/zápise sa vždy generujú nové podľa aktuálneho počtu. Ich
+		// „recyklovanie“ na účely histórie by bolo komplikované (a preto
+		// potenciálne nespoľahlivé). Mechanizmus histórie potrebuje ID-čka
+		// nielen dynamicky generovať (pri zabezpečení unikátnosti), ale aj
+		// ukladať do údajov histórie a obnovovať ich podľa údajov histórie
+		// (všetko pri zabezpečení unikátnosti).
+	}
+
+	public static class ÚdajeLinky
+	{
+		
+	}
+
+
 	private static enum Typ
 	{
-		POPIS, POLOHA, ÚČEL, ČASOVAČ, ROZPTYL, KAPACITA, TVAR, POMER, VEĽKOSŤ,
-		ZAOBLENIE, NOVÝ, KÓPIA
+		// TODO: Pozor‼ Posunutie (zmena polohy) musí byť merané v relatívnych
+		// jednotkách, lebo asynchrónne sa môže ľubovoľne posúvať pohľad…
+
+		POPIS, VEĽKOSŤ_PÍSMA, POPIS_POD, POLOHA, ÚČEL, ČASOVAČ, ROZPTYL,
+		POČIATOČNÝ_ČAS, LIMIT, KAPACITA, ZOZNAM/*_MIEN*/, CYKLICKÝ/*_ZOZNAM*/,
+		/*REŽIM_*/VÝBER_ZÁKAZNÍKOV, /*REŽIM_*/VÝBER_LINIEK,
+		/*REŽIM_*/KRESLENIE, /*NÁZOV_*/TVAR, TRANSFORMÁCIE/*_TVARU*/, POMER,
+		VEĽKOSŤ, UHOL, ZAOBLENIE, /*POČET_*/ČIAR, ROZOSTUPY/*_ČIAR*/,
+		/*ZOBRAZ_*/INFORMÁCIE, NOVÝ, KÓPIA, VYMAŽ,
+
+		CIEĽ/*_SPOJNICE*/, VÁHA/*_SPOJNICE*/,
+
+		DILATÁCIA/*_ČASU*/,
 	}
 
 	private static class Akcia
