@@ -87,7 +87,7 @@ public class Tvar
 		}
 	}
 
-	/* TODO asi vymaž (množno bude treba v budúcnosti?)
+	/* TODO: asi vymaž (množno bude treba v budúcnosti?)
 	public static int indexNázvu(String hľadanýNázov)
 	{
 		int i = 0;

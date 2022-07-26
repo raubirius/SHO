@@ -1,4 +1,5 @@
 
+import java.awt.Font;
 import java.util.Vector;
 import knižnica.*;
 import static knižnica.Svet.*;
@@ -29,6 +30,8 @@ public class Zákazník extends GRobot implements Činnosť
 	private boolean odchádza = false;
 	private double interval = 0.0;
 	private double čas = 0.0;
+
+	private String meno = null;
 
 
 	// Konštruktor musí byť súkromný, aby sa dali recyklovať neaktívni
@@ -63,6 +66,10 @@ public class Zákazník extends GRobot implements Činnosť
 			skočNa(vLinke);
 		}
 
+		if (null == písmoZákazníkov)
+			písmoZákazníkov = hlavnýRobot().písmo().deriveFont(14.0f);
+
+		písmo(písmoZákazníkov);
 		interval = 0.0;
 		čas = Systém.čas;
 
@@ -71,9 +78,37 @@ public class Zákazník extends GRobot implements Činnosť
 		zrýchlenie(0, false);
 		rýchlosť(0, false);
 
+		meno = null;
 		odchádza = false;
 		aktivuj(false);
 	}
+
+
+	private static Font písmoZákazníkov = null;
+
+	// Veľkosť písma (pre istotu, keby bolo treba dobudúcna):
+	/*
+	private float veľkosťPísma = 16.0f;
+
+	public float veľkosťPísma() { return veľkosťPísma; }
+
+	public void veľkosťPísma(float veľkosťPísma)
+	{
+		Písmo písmo = hlavnýRobot().písmo();
+		if (písmo.veľkosť() == veľkosťPísma)
+			písmo(písmo);
+		else
+			písmo(písmo.deriveFont(veľkosťPísma));
+		this.veľkosťPísma = veľkosťPísma;
+	}
+
+	public void veľkosťPísma(Double veľkosťPísma)
+	{
+		if (null == veľkosťPísma)
+			veľkosťPísma(hlavnýRobot().písmo().veľkosť());
+		else veľkosťPísma(veľkosťPísma.floatValue());
+	}
+	*/
 
 
 	// Rôzne aktivity:
@@ -103,7 +138,8 @@ public class Zákazník extends GRobot implements Činnosť
 
 				vLinke.poloha(poloha);
 			}
-			else if (vLinke.jeZásobník() || vLinke.jeČakáreň())
+			else if (vLinke.jeZásobník() || vLinke.jeČakáreň() ||
+				vLinke.jeZastávka())
 			{
 				Bod poloha = poloha();
 				double uhol = uhol();
@@ -126,6 +162,9 @@ public class Zákazník extends GRobot implements Činnosť
 			}
 		}
 	}
+
+	public String meno() { return meno; }
+	public Zákazník pomenuj(String meno) { this.meno = meno; return this; }
 
 
 	// Statická časť (zväčša súvisiaca s evidenciou):
@@ -170,8 +209,8 @@ public class Zákazník extends GRobot implements Činnosť
 
 		for (int i = 0; i < počet; ++i)
 		{
-			Zákazník Zákazník = zákazníci.get(i);
-			if (Zákazník.aktívny()) aktívni.add(Zákazník);
+			Zákazník zákazník = zákazníci.get(i);
+			if (zákazník.aktívny()) aktívni.add(zákazník);
 		}
 
 		Zákazník[] pole = new Zákazník[aktívni.size()];
@@ -181,6 +220,14 @@ public class Zákazník extends GRobot implements Činnosť
 		aktívni = null;
 
 		return pole;
+	}
+
+	public static boolean žiadnyAktívny()
+	{
+		int počet = zákazníci.size();
+		for (int i = 0; i < počet; ++i)
+			if (zákazníci.get(i).aktívny()) return false;
+		return true;
 	}
 
 	public static void vyčisti()
@@ -224,6 +271,7 @@ public class Zákazník extends GRobot implements Činnosť
 		case EMITOR: farba(svetlomodrá); break;
 		case ZÁSOBNÍK: farba(svetlofialová); break;
 		case ČAKÁREŇ: farba(svetlotyrkysová); break;
+		case ZASTÁVKA: farba(svetloatramentová); break;
 		case DOPRAVNÍK: farba(svetlohnedá); break;
 		case MENIČ: farba(svetlooranžová); break;
 		case UVOĽŇOVAČ: farba(svetlozelená); break;
@@ -240,6 +288,12 @@ public class Zákazník extends GRobot implements Činnosť
 		kruh();
 		farba(čierna);
 		kružnica();
+
+		if (null != meno && !meno.isEmpty())
+		{
+			skoč(0, veľkosť() + výškaRiadka());
+			text(meno, KRESLI_NA_STRED);
+		}
 	}
 
 
@@ -275,49 +329,37 @@ public class Zákazník extends GRobot implements Činnosť
 				// 
 				// Režimy:
 				// 
-				//  • postupné prehľadávanie (bude cyklické počítadlo, ktoré
-				//    vždy určí, ktorou linkou sa začne hľadanie voľnej linky)
-				//  • náhodné – vyvážené pravdepodobnosťami (každá spojnica
-				//    bude mať hodnotu, ktorá určí váhu pravdepodobnosti, že
-				//    bude vybraná – hľadá sa algoritmom, ktorý bude vždy
-				//    vyraďovať použité spojnice zo zoznamu spojníc, kým tam
-				//    nezostane len jedna, ktorá keď nebude voľná… smola;
-				//    samozrejme, že sa vyberie prvá voľná v poradí)
-				//  • podľa priorít (každé prehľadávanie sa vždy začne
-				//    v rovnakom poradí, ktoré bude určené podľa priorít)
+				//  • postupné (cyklické) prechádzanie spojení
+				//    ◦ to, ktorou linkou sa začne hľadanie ďalšej voľnej
+				//      linky určuje cyklické počítadlo;
+				//  • náhodné prechádzanie spojení vyvážené pravdepodobnosťami
+				//    ◦ každé spojenie má hodnotu, ktorá určí váhu
+				//      pravdepodobnosti, že bude vybraná linka, do ktorej
+				//      smeruje;
+				//      ▪ z hodnôt sa zostaví „pásmo,“ v ktorom je každá linka
+				//        zastúpená dĺžkou ekvivalentnou jej váhe;
+				//      ▪ algoritmus následne generuje náhodné hodnoty
+				//        v rozsahu nula až dĺžka pásma, to znamená, že každá
+				//        hodnota sa zaradí niekde v rámci pásma, čo určí
+				//        linku, ktorá má byť preskúmaná (či je voľná);
+				//      ▪ toto sa vykonáva, kým sa nenájde voľná linka,
+				//        pričom treba obsadené linky postupne zo zoznamu
+				//        vyraďovať, aby sa hľadanie nevykonávalo nekonečne
+				//        dlho;
+				//  • podľa priorít – uprednostňujúce linky s vyššou prioritou
+				//    ◦ každé hľadanie voľnej linky sa vždy začína v rovnakom
+				//      poradí, ktoré je určené prioritami spojení.
 				// 
 
-				Spojnica[] spojnice = vLinke.spojniceZ();
-				for (Spojnica spojnica : spojnice)
+				Boolean failed = vLinke.dajLinku(this, true);
+				if (null != failed) return retval = failed;
+
+				if (null != vLinke)
 				{
-					GRobot cieľ = spojnica.cieľ();
-					if (cieľ instanceof Linka)
-					{
-						Linka linka = (Linka)cieľ;
-						debug("cieľ: ", linka);
-						if (linka.evidujZákazníka(this))
-						{
-							priraďKLinke(linka);
-							pridajInterval((linka.jeEmitor() ||
-								linka.jeZásobník()) ? 0.0 :
-								linka.interval());
-
-							upravCieľPodľaLinky(true);
-
-							maximálnaRýchlosť(faktorMaximálnejRýchlosti *
-								Systém.dilatácia);
-							zrýchlenie(faktorZrýchlenia * Systém.dilatácia,
-								false);
-							rýchlosť(0, false);
-
-							if (linka.jeZásobník()) return retval = false;
-							return retval = čas < Systém.čas;
-						}
-					}
+					if (vLinke.jeUvoľňovač()) uvoľniMa();
+					else if (!vLinke.jeZastávka()) odíď();
 				}
-
-				if (null != vLinke && vLinke.jeUvoľňovač())
-					uvoľniMa(); else odíď();
+				else odíď();
 			}
 			else
 			{
@@ -356,6 +398,14 @@ public class Zákazník extends GRobot implements Činnosť
 
 		++Systém.odídených;
 		if (null != vLinke) ++vLinke.odídených;
+		if (null != meno)
+		{
+			String popis = null != vLinke ? vLinke.popis() : null;
+			if (null != popis)
+				Systém.zoznamOdídených.add(meno + "\t" + popis);
+			else
+				Systém.zoznamOdídených.add(meno);
+		}
 
 		vyraďZLinky();
 
@@ -377,7 +427,11 @@ public class Zákazník extends GRobot implements Činnosť
 
 		++Systém.vybavených;
 		if (null != vLinke)
+		{
 			++vLinke.vybavených;
+			if (null != meno)
+				vLinke.pridajMeno(meno);
+		}
 
 		vyraďZLinky();
 		deaktivuj();
