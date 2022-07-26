@@ -163,6 +163,36 @@ public class Zákazník extends GRobot implements Činnosť
 		return Zákazník.zákazníci.toArray(zákazníci);
 	}
 
+	public static Zákazník[] dajAktívnych()
+	{
+		int počet = zákazníci.size();
+		Vector<Zákazník> aktívni = new Vector<>();
+
+		for (int i = 0; i < počet; ++i)
+		{
+			Zákazník Zákazník = zákazníci.get(i);
+			if (Zákazník.aktívny()) aktívni.add(Zákazník);
+		}
+
+		Zákazník[] pole = new Zákazník[aktívni.size()];
+		pole = aktívni.toArray(pole);
+
+		aktívni.clear();
+		aktívni = null;
+
+		return pole;
+	}
+
+	public static void vyčisti()
+	{
+		for (Zákazník zákazník : zákazníci)
+			if (zákazník.aktívny())
+			{
+				zákazník.vyraďZLinky();
+				zákazník.deaktivuj();
+			}
+	}
+
 
 	// Obsluha udalostí:
 
@@ -217,13 +247,8 @@ public class Zákazník extends GRobot implements Činnosť
 	{
 		Boolean retval = null; try { debugIn("(", this, ")");
 
-		if (null != vLinke)
-		{
-			if (vLinke.jeDopravník())
-			{
-				upravCieľPodľaLinky();
-			}
-		}
+		// (Iba animačno-grafická záležitosť. Nemá vplyv na simuláciu:
+		if (null != vLinke && vLinke.jeDopravník()) upravCieľPodľaLinky();
 
 		if (čas < Systém.čas)
 		{
@@ -235,14 +260,30 @@ public class Zákazník extends GRobot implements Činnosť
 			else if (null != vLinke)
 			{
 				// Čakanie v zásobníku je (na rozdiel od čakárne) časovo
-				// neobmedzené, preto je kľúčové, aby zásobník neustále
-				// sledoval, či sa neuvoľnila nejaká linka pre prvého
-				// čakajúceho zákazníka (aby ho tam mohol poslať). Inak by
-				// v ňom zákazníci čakali donekonečna.
-
+				// neobmedzené:
 				if (vLinke.jeZásobník()) return retval = false;
+					// (Preto je kľúčové, aby zásobník neustále sledoval,
+					// či sa neuvoľnila nejaká linka pre toho čakajúceho
+					// zákazníka, ktorý je na rade s obsluhou (aby ho tam
+					// mohol poslať), inak by zákazníci v zásobníku čakali
+					// donekonečna. To sa deje v triede Linka.)
 
 				if (smerujeDoCieľa()) skočNaCieľ();
+
+				// TODO .dajLinku(), ktorá je voľná – podľa spojníc a podľa
+				// stanovených priorít (pravdepodobností) – režimy:
+				// 
+				//  • postupné prehľadávanie (bude cyklické počítadlo, ktoré
+				//    vždy určí, ktorou linkou sa začne hľadanie voľnej linky)
+				//  • náhodné – vyvážené pravdepodobnosťami (každá spojnica
+				//    bude mať hodnotu, ktorá určí váhu pravdepodobnosti, že
+				//    bude vybraná – hľadá sa algoritmom, ktorý bude vždy
+				//    vyraďovať použité spojnice zo zoznamu spojníc, kým tam
+				//    nezostane len jedna, ktorá keď nebude voľná… smola;
+				//    samozrejme, že sa vyberie prvá voľná v poradí)
+				//  • podľa priorít (každé prehľadávanie sa vždy začne
+				//    v rovnakom poradí, ktoré bude určené podľa priorít)
+				// 
 
 				Spojnica[] spojnice = vLinke.spojniceZ();
 				for (Spojnica spojnica : spojnice)
@@ -259,8 +300,6 @@ public class Zákazník extends GRobot implements Činnosť
 								linka.jeZásobník()) ? 0.0 :
 								linka.interval());
 
-							// TODO del:
-							// cieľ(linka, false);
 							upravCieľPodľaLinky(true);
 
 							maximálnaRýchlosť(faktorMaximálnejRýchlosti *
@@ -316,9 +355,11 @@ public class Zákazník extends GRobot implements Činnosť
 		++Systém.odídených;
 		if (null != vLinke)
 		{
-			Integer odišloVLinke = Systém.mapaOdchodov.get(vLinke);
-			if (null == odišloVLinke) odišloVLinke = 1; else ++odišloVLinke;
-			Systém.mapaOdchodov.put(vLinke, odišloVLinke);
+			// TODO del
+			// Integer odišloVLinke = Systém.mapaOdchodov.get(vLinke);
+			// if (null == odišloVLinke) odišloVLinke = 1; else ++odišloVLinke;
+			// Systém.mapaOdchodov.put(vLinke, odišloVLinke);
+			++vLinke.odídených;
 		}
 
 		vyraďZLinky();
@@ -340,6 +381,9 @@ public class Zákazník extends GRobot implements Činnosť
 		try { debugIn("(", this, ")");
 
 		++Systém.vybavených;
+		if (null != vLinke)
+			++vLinke.vybavených;
+
 		vyraďZLinky();
 		deaktivuj();
 
@@ -383,6 +427,7 @@ public class Zákazník extends GRobot implements Činnosť
 
 	public int compareTo(Činnosť iná)
 	{
+		if (iná instanceof Linka) return 1;
 		return (int)(čas() - iná.čas());
 	}
 }

@@ -51,6 +51,11 @@ public class Linka extends GRobot implements Činnosť
 	private final KontextováPoložka položkaZmeňNaOblýObdĺžnik;
 
 
+	// Verejné štatistiky:
+	public int odídených = 0;
+	public int vybavených = 0;
+
+
 	// Vnútorné stavy a vizualizácia:
 	private boolean ťaháSa = false;
 	private static Linka upravujeSa = null; // Toto riešenie bolo
@@ -66,6 +71,7 @@ public class Linka extends GRobot implements Činnosť
 		// spojníc, ale je možné, že sa časom tento účel rozšíril.
 
 	private String popis = null;
+	private String[] riadkyPopisu = null;
 	private boolean popisPod = false;
 	private ÚčelLinky účel = null;
 	private double časovač = 1.0;
@@ -369,6 +375,18 @@ public class Linka extends GRobot implements Činnosť
 	}
 
 
+	public static void vyčisti()
+	{
+		for (Linka linka : linky)
+			if (linka.aktívny())
+			{
+				linka.odídených = linka.vybavených = 0;
+				linka.čas = Systém.čas;
+				if (linka.jeEmitor()) linka.čas += linka.interval();
+			}
+	}
+
+
 	// Úprava vlastností (individuálne aj hromadne):
 
 	private final static String[] popisyÚpravyPopisu = new String[]
@@ -376,7 +394,7 @@ public class Linka extends GRobot implements Činnosť
 
 	public void upravPopis()
 	{
-		Object[] údaje = {popis, popisPod};
+		Object[] údaje = {null == popis ? "" : popis, popisPod};
 
 		if (Svet.dialóg(popisyÚpravyPopisu, údaje, "Popis linky"))
 		{
@@ -414,7 +432,8 @@ public class Linka extends GRobot implements Činnosť
 				Linka linka = linky.get(i);
 				if (linka.aktívny() && linka.označená())
 				{
-					zoznam.add(linka.popis);
+					if (null != linka.popis)
+						zoznam.add(linka.popis);
 					priemerUmiestnenia += linka.popisPod ? 1.0 : 0.0;
 					++nn;
 				}
@@ -454,48 +473,6 @@ public class Linka extends GRobot implements Činnosť
 			}
 		}
 	}
-
-	/* TODO del old way
-	public void upravPopis()
-	{
-		String novýPopis = upravReťazec(popis,
-			"Upravte popis linky:", "Popis linky");
-		if (null != novýPopis) popis(novýPopis);
-	}
-
-	public static void upravPopisy()
-	{
-		int početOznačených = početOznačených();
-		if (0 == početOznačených)
-			varovanie("Nie sú označené žiadne linky.",
-				"Úprava popisov liniek");
-		else if (1 == početOznačených)
-		{
-			for (Linka linka : linky)
-				if (linka.aktívny() && linka.označená())
-				{
-					linka.upravPopis();
-					break;
-				}
-		}
-		else
-		{
-			String novýPopis = zadajReťazec(
-				"Upravte spoločný popis označených liniek:",
-				"Popis liniek");
-
-			if (null != novýPopis)
-			{
-				int n = linky.size();
-				for (int i = 0; i < n; ++i)
-				{
-					Linka linka = linky.get(i);
-					if (linka.aktívny() && linka.označená())
-						linka.popis(novýPopis);
-				}
-			}
-		}
-	}*/
 
 
 	public void zmeňNaEmitor()
@@ -806,12 +783,13 @@ public class Linka extends GRobot implements Činnosť
 
 	private final static String[][] popisyKoeficientov = new String[][]
 		{
+			// Časovač je intervalom produkcie zákazníkov pre emitor,
+			// trpezlivosťou zákazníkov pre čakáreň, časom dopravy pre
+			// dopravník, časom spracovania pre iné linky, pričom je
+			// irelevantný pre zásobníky.
 			{"Časovač:", "Rozptyl:"},
-				// Časovač je intervalom produkcie zákazníkov pre emitor,
-				// trpezlivosťou zákazníkov pre čakáreň, časom dopravy pre
-				// dopravník, časom spracovania pre iné linky, pričom je
-				// irelevantný pre zásobníky.
-			{"Kapacita:"}
+			{"Kapacita:"},
+			{"Časovač:", "Rozptyl:", "Kapacita:"}
 		};
 
 	public void upravKoeficienty()
@@ -821,7 +799,20 @@ public class Linka extends GRobot implements Činnosť
 			Object[] údaje = {new Double(kapacita)};
 
 			if (Svet.dialóg(popisyKoeficientov[1], údaje, "Vlastnosti linky"))
+			{
 				kapacita = ((Double)údaje[0]).intValue();
+			}
+		}
+		else if (ÚčelLinky.ČAKÁREŇ == účel)
+		{
+			Object[] údaje = {časovač, rozptyl, new Double(kapacita)};
+
+			if (Svet.dialóg(popisyKoeficientov[2], údaje, "Vlastnosti linky"))
+			{
+				časovač = (Double)údaje[0];
+				rozptyl = (Double)údaje[1];
+				kapacita = ((Double)údaje[2]).intValue();
+			}
 		}
 		else
 		{
@@ -870,8 +861,9 @@ public class Linka extends GRobot implements Činnosť
 				Linka linka = linky.get(i);
 				if (linka.aktívny() && linka.označená())
 				{
-					if (ÚčelLinky.ZÁSOBNÍK == linka.účel)
-						typ |= 2; else typ |= 1;
+					if (ÚčelLinky.ZÁSOBNÍK == linka.účel) typ |= 2;
+					else if (ÚčelLinky.ČAKÁREŇ == linka.účel) typ |= 3;
+					else typ |= 1;
 
 					priemery[0] += linka.časovač;
 					priemery[1] += linka.rozptyl;
@@ -1074,11 +1066,40 @@ public class Linka extends GRobot implements Činnosť
 		return popis;
 	}
 
+	public String skráťPopis(int dĺžka)
+	{
+		if (popis.length() > dĺžka + 1)
+			return popis.substring(0, dĺžka) + "…";
+		return popis;
+	}
+
 	public void popis(String popis)
 	{
-		this.popis = null == popis || popis.isEmpty() ? null : popis;
-		kontextováPonuka.popis(null == this.popis ?
-			"<html><i>«nepomenovaná linka»</i></html>" : this.popis);
+		if (null == popis || popis.isEmpty())
+		{
+			this.popis = null;
+			riadkyPopisu = null;
+			kontextováPonuka.popis(
+				"<html><i>«nepomenovaná linka»</i></html>");
+		}
+		else
+		{
+			this.popis = popis;
+
+			if (-1 != popis.indexOf("\\n"))
+			{
+				riadkyPopisu = popis.split("\\\\n");
+				popis = this.popis.replace("\\n", " ");
+			}
+			else
+				riadkyPopisu = null;
+
+			if (popis.length() > 31) // skráťPopis(30)
+				kontextováPonuka.popis(popis.substring(0, 30) + "…");
+			else
+				kontextováPonuka.popis(popis);
+
+		}
 		žiadajPrekreslenie();
 	}
 
@@ -1225,6 +1246,7 @@ public class Linka extends GRobot implements Činnosť
 			}
 
 			čas = Systém.čas;
+			if (jeEmitor()) čas += interval();
 			vyraďZákazníkov();
 			aktualizujKontextovúPonuku();
 		}
@@ -1340,124 +1362,6 @@ public class Linka extends GRobot implements Činnosť
 	}
 
 
-	// TODO vymaž tento debugovací úsek
-	// 
-	// /*packagePrivate*/ static double rotovanéXRad(
-	// 	double x, double y, double α)
-	// {
-	// 	if (0 == α) return x;
-	// 	return (x * cos(α)) - (y * sin(α));
-	// }
-	// 
-	// /*packagePrivate*/ static double rotovanéYRad(
-	// 	double x, double y, double α)
-	// {
-	// 	if (0 == α) return y;
-	// 	return (x * sin(α)) + (y * cos(α));
-	// }
-	// 
-	// public boolean myšVoŠtvorci2(double polomer)
-	// {
-	// 	boolean jeV; double x1, y1;
-	// 	if (uhol() % 90.0 == 0)
-	// 	{
-	// 		x1 = ÚdajeUdalostí.polohaMyšiX() - polohaX();
-	// 		y1 = ÚdajeUdalostí.polohaMyšiY() - polohaY();
-	// 		jeV = x1 >= -polomer && x1 <= polomer &&
-	// 			y1 >= -polomer && y1 <= polomer;
-	// 	}
-	// 	else
-	// 	{
-	// 		// x₀ = xm − x
-	// 		// y₀ = ym − y
-	// 		double x0 = ÚdajeUdalostí.polohaMyšiX() - polohaX();
-	// 		double y0 = ÚdajeUdalostí.polohaMyšiY() - polohaY();
-	// 
-	// 		// x₁ = x₀ . cos(α) − y₀ . sin(α)
-	// 		// y₁ = x₀ . sin(α) + y₀ . cos(α)
-	// 		double α = toRadians(90 - uhol());
-	// 		x1 = rotovanéXRad(x0, y0, α);
-	// 		y1 = rotovanéYRad(x0, y0, α);
-	// 
-	// 		// x₁ > -polomer && y₁ > -polomer && x₁ < polomer && y₁ < polomer
-	// 		jeV = x1 >= -polomer && x1 <= polomer &&
-	// 			y1 >= -polomer && y1 <= polomer;
-	// 	}
-	// 
-	// 	/*if (jeV && 0 != zaoblenieX && 0 != zaoblenieY)
-	// 	{
-	// 		double zx = abs(zaoblenieX) / 2;
-	// 		double zy = abs(zaoblenieY) / 2;
-	// 		double Δzx = polomer - zx, Δzy = polomer - zy;
-	// 
-	// 		if (x1 > Δzx)
-	// 		{
-	// 			if (y1 > Δzy)
-	// 			{
-	// 				x1 -= Δzx; y1 -= Δzy;
-	// 				x1 /= zx; y1 /= zy;
-	// 				return (x1 * x1 + y1 * y1) <= 1;
-	// 			}
-	// 			else if (y1 < -Δzy)
-	// 			{
-	// 				x1 -= Δzx; y1 += Δzy;
-	// 				x1 /= zx; y1 /= zy;
-	// 				return (x1 * x1 + y1 * y1) <= 1;
-	// 			}
-	// 		}
-	// 		else if (x1 < -Δzx)
-	// 		{
-	// 			if (y1 > Δzy)
-	// 			{
-	// 				x1 += Δzx; y1 -= Δzy;
-	// 				x1 /= zx; y1 /= zy;
-	// 				return (x1 * x1 + y1 * y1) <= 1;
-	// 			}
-	// 			else if (y1 < -Δzy)
-	// 			{
-	// 				x1 += Δzx; y1 += Δzy;
-	// 				x1 /= zx; y1 /= zy;
-	// 				return (x1 * x1 + y1 * y1) <= 1;
-	// 			}
-	// 		}
-	// 	}*/
-	// 
-	// 	return jeV;
-	// }
-	// 
-	// boolean príznak1 = false;
-	// boolean príznak2 = false;
-	// @Override public void pohybMyši()
-	// {
-	// 	príznak1 = príznak2 = false;
-	// 	Poloha p = poloha();
-	// 	double zx = zaoblenieX();
-	// 	double zy = zaoblenieY();
-	// 	zaoblenieX(0);
-	// 	zaoblenieY(0);
-	// 	// preskočVpravo(šírka() / 2);
-	// 
-	// 	príznak1 = myšVoŠtvorci(50);
-	// 	príznak2 = myšVoŠtvorci2(50);
-	// 	// príznak1 = myšVKruhu(8);
-	// 	// príznak1 = myšVObdĺžniku(8, 8);
-	// 
-	// 	// strop.prepíšBod(this, červená);
-	// 
-	// 	/*Farba f = farba();
-	// 	náhodnáPoloha();
-	// 	if (myšVKruhu(50)) farba(červená); else farba(snehová);
-	// 	kruh(5);
-	// 	farba(f);*/
-	// 
-	// 	// odskoč(výška() / 2);
-	// 	// boolean točiť = myšVKruhu(8);
-	// 	poloha(p);
-	// 	zaoblenieX(zx);
-	// 	zaoblenieY(zy);
-	// }
-
-
 	@Override public void stlačenieTlačidlaMyši()
 	{
 		ťaháSa = false;
@@ -1543,6 +1447,16 @@ public class Linka extends GRobot implements Činnosť
 		{
 			Bod p = Bod.rozdiel(polohaMyši(), poslednáPolohaMyši());
 			skoč(p.getX(), p.getY());
+			for (Zákazník zákazník : zákazníci)
+			{
+				zákazník.skoč(p.getX(), p.getY());
+				if (zákazník.smerujeDoCieľa())
+				{
+					Bod b = zákazník.cieľ();
+					b.posuň(p);
+					zákazník.upravCieľ(b);
+				}
+			}
 		}
 	}
 
@@ -1579,11 +1493,6 @@ public class Linka extends GRobot implements Činnosť
 		if (this == upravujeSa && 0 == typÚprav)
 			farba(svetločervená); else farba(snehová);
 		vyplňŠtvorec(5); farba(f); kresliŠtvorec(5);
-
-		// TODO vymaž tento debugovací úsek
-		// 
-		// if (príznak1) kresliŠtvorec(10);
-		// if (príznak2) kresliŠtvorec(14);
 
 		odskoč(výška() / 2);
 		if (this == upravujeSa && 1 == typÚprav)
@@ -1656,13 +1565,32 @@ public class Linka extends GRobot implements Činnosť
 
 		if (null != popis)
 		{
-			if (popisPod)
+			if (null != riadkyPopisu)
 			{
-				odskoč((výškaRiadka() + výška()) / 2);
-				text(popis);
-				skoč((výškaRiadka() + výška()) / 2);
+				Poloha p = poloha();
+				if (popisPod)
+					odskoč((výškaRiadka() + výška()) / 2);
+				else
+					skoč(((riadkyPopisu.length - 1) * výškaRiadka()) / 2);
+				double skok = výškaRiadka();
+				for (String riadokPopisu : riadkyPopisu)
+				{
+					text(riadokPopisu);
+					odskoč(skok);
+				}
+				poloha(p);
 			}
-			else text(popis);
+			else
+			{
+				if (popisPod)
+				{
+					Poloha p = poloha();
+					odskoč((výškaRiadka() + výška()) / 2);
+					text(popis);
+					poloha(p);
+				}
+				else text(popis);
+			}
 		}
 
 		// TODO dať vypnuteľné
@@ -1726,6 +1654,18 @@ public class Linka extends GRobot implements Činnosť
 					KRESLI_PRIAMO);
 				skoč(0, -výškaRiadka());
 			}
+
+			if (0 != odídených)
+			{
+				text("Odišlo nevybavených: " + odídených, KRESLI_PRIAMO);
+				skoč(0, -výškaRiadka());
+			}
+
+			if (0 != vybavených)
+			{
+				text("Vybavených: " + vybavených, KRESLI_PRIAMO);
+				skoč(0, -výškaRiadka());
+			}
 		}
 	}
 
@@ -1767,13 +1707,15 @@ public class Linka extends GRobot implements Činnosť
 			if (!zákazníci.isEmpty())
 			{
 				// Zásobníky a ćakárne sledujú, či sa pre prvého čakajúceho
-				// zákazníka neuvoľnila nejaká linka, aby ho tam mohol poslať,
+				// zákazníka neuvoľnila nejaká linka, aby sa tam mohol poslať,
 				// pričom čakanie zákazníkov v zásobníku je časovo neobmedzené
 				// a v čakárni majú zákazníci určitú mieru trpezlivosti čakania.
 
-				Zákazník zákazník = zákazníci.firstElement();
+				Zákazník zákazník = zákazníci.firstElement(); // TODO Podľa
+					// režimu sa berie prvý, posledný, náhodný… (???) TODO
 				debug("prvýZákazník: ", zákazník);
 
+				// TODO .dajLinku() – pozri podrobnosti v Zákazníkovi.
 				Spojnica[] spojnice = spojniceZ();
 				for (Spojnica spojnica : spojnice)
 				{
@@ -1788,8 +1730,6 @@ public class Linka extends GRobot implements Činnosť
 							zákazník.nastavInterval((linka.jeEmitor() ||
 								linka.jeZásobník()) ? 0.0 : linka.interval());
 
-							// TODO del:
-							// zákazník.cieľ(linka, false);
 							zákazník.upravCieľPodľaLinky(true);
 
 							zákazník.maximálnaRýchlosť(
@@ -1819,21 +1759,38 @@ public class Linka extends GRobot implements Činnosť
 	{
 		Boolean retval = null; try { debugIn("(", this, ")");
 
-		// Ak je zoznam zákazníkov prázdny (resp. v rámci kapacity),
-		// tak je linka voľná. Emitory majú výnimku, tie majú kvázi
-		// neobmedzenú kapacitu…
+		// Ak je zoznam zákazníkov prázdny (resp. v rámci kapacity), tak je
+		// linka voľná.
+		// 
+		// Dopravníky majú výnimku, tie majú v podstate neobmedzenú kapacitu.
+		// Kapacita dopravníka by bola kontraproduktívna. Každý zákazník musí
+		// dostať svoje miesto… Kapacita sa dá dodatočne vynútiť zásobníkom
+		// umiestneným pred dopravník. Keď potrebujeme, aby sa tovar ukladal
+		// na dopravník s určitým odstupom (t. j. docieliť určité úvodné
+		// zdržanie, aby mohol nastúpiť ďalší zákazník), tak pred dopravník
+		// treba zaradiť menič (opäť, spolu so zásobníkom, lebo by nastávali
+		// úniky zákazníkov.
+		// 
+		// (V podstate všetko/všeličo sa dá docieliť vhodnou kombináciou
+		// rôznych typov liniek.)
+		// 
+		// Emitory majú tiež výnimku, ale z nich zákazníci okamžite
+		// odchádzajú, takže pri nich je táto vlastnosť v podstate
+		// irelevantná.
 
 		if (null != účel) switch (účel)
 		{
-		case EMITOR: return retval = true;
+		case EMITOR:
+		case DOPRAVNÍK:
+			return retval = true;
 
 		case ZÁSOBNÍK:
 		case ČAKÁREŇ:
 			return retval = zákazníci.size() < kapacita;
 
-		case DOPRAVNÍK:
 		case MENIČ:
-		case UVOĽŇOVAČ: return retval = zákazníci.isEmpty();
+		case UVOĽŇOVAČ:
+			return retval = zákazníci.isEmpty();
 		}
 
 		return retval = false;
@@ -1945,6 +1902,7 @@ public class Linka extends GRobot implements Činnosť
 
 	public int compareTo(Činnosť iná)
 	{
+		if (iná instanceof Zákazník) return -1;
 		return (int)(čas() - iná.čas());
 	}
 }
