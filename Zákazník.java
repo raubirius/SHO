@@ -385,7 +385,7 @@ public class Zákazník extends GRobot implements Činnosť
 		{
 			String popis = null != vLinke ? vLinke.popis() : null;
 			if (null != popis)
-				Systém.zoznamOdídených.add(meno + "\t" + popis);
+				Systém.zoznamOdídených.add(meno + " – " + popis);
 			else
 				Systém.zoznamOdídených.add(meno);
 		}

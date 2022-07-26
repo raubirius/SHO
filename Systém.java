@@ -44,6 +44,8 @@ TODO:
    posunutie pohľadu).
  | 
  • Implementovať príznak „zmenené“ aplikovateľný systémom save/load.
+ | 
+ • Zlepšiť ukladanie systému – každé Ctrl + S sa nesmie pýtať na meno.
  ¦ 
  • Dokončiť funkcie undo/redo.
 ———

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="45"
+   height="45"
+   viewBox="0 0 45 45"
+   id="svg2"
+   version="1.1"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
+   sodipodi:docname="pracovny-stol-a-stolicka-s-odkladacom.svg">
+  <defs
+     id="defs4">
+    <clipPath
+       id="clipEmfPath1"
+       clipPathUnits="userSpaceOnUse">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3341"
+         d="M 6.25143,5.00114 H 355.081 V 391.34 H 6.25143 Z" />
+    </clipPath>
+    <pattern
+       y="0"
+       x="0"
+       height="6"
+       width="6"
+       patternUnits="userSpaceOnUse"
+       id="EMFhbasepattern" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="7.649398"
+     inkscape:cx="83.054857"
+     inkscape:cy="18.205956"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:window-width="1920"
+     inkscape:window-height="1001"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:document-rotation="0"
+     units="px" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-5.8370518,-281.46362)">
+    <path
+       id="path3456"
+       style="fill:#ffff00;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
+       d="m 11.456873,300.29398 c -0.192622,0 -0.344703,0.13657 -0.344703,0.3095 0,0.17306 0.152081,0.30963 0.344703,0.30963 h 33.638683 c 0.192664,0 0.344722,-0.13657 0.344722,-0.30963 0,-0.17293 -0.152058,-0.3095 -0.344722,-0.3095 z m 38.768734,1.49333 -2.5346,-7.16634 H 8.9831375 l -2.5345612,7.16634 z M 7.0568752,301.678 c -0.3953956,0 -0.7198234,0.28236 -0.7198234,0.63743 0,0.36427 0.3244278,0.6465 0.7198234,0.6465 H 49.617256 c 0.395447,0 0.719797,-0.28223 0.719797,-0.6465 0,-0.35507 -0.32435,-0.63743 -0.719797,-0.63743 z m 0.8673283,1.28396 c -0.010039,0.0472 -0.015762,0.0956 -0.015762,0.14569 v 3.05959 c 0,0.41882 0.3853649,0.76504 0.8517255,0.76504 h 39.326202 c 0.466416,0 0.851583,-0.34622 0.851583,-0.76504 v -3.05959 c 0,-0.05 -0.0057,-0.0985 -0.01576,-0.14569 z m 38.8949505,23.00166 -0.486655,-1.34767 h -0.983428 l -0.486655,1.34767 z m -34.956749,0 -0.486629,-1.34767 H 10.39236 l -0.4866415,1.34767 z m 32.04707,-5.62746 -0.395449,-1.0836 H 42.73338 l -0.395444,1.0836 z m -29.370573,0 -0.395387,-1.0836 h -0.780644 l -0.395396,1.0836 z m 23.723509,-1.40232 -0.415687,-1.0836 h -0.821122 l -0.405568,1.0836 z m -19.201903,0 -0.415559,-1.0836 h -0.821255 l -0.415659,1.0836 z m 16.75864,-4.54384 -0.3346,-0.8742 H 34.825602 L 34.491,314.39 Z m -14.518034,0 -0.324476,-0.8742 h -0.669069 l -0.324481,0.8742 z m -11.283807,-7.45772 v 17.34683 h 1.845168 v -17.34683 z m 2.990695,0 v 11.96515 h 1.551225 v -11.96515 z m 4.50145,0 v 10.64475 h 1.541001 v -10.64475 z m 2.504056,0 v 6.29212 h 1.307835 v -6.29212 z m 14.477488,0 v 6.29212 h 1.32814 v -6.29212 z m 2.129029,0 v 10.64475 h 1.64239 v -10.64475 z m 5.717978,0 v 11.96515 h 1.551083 v -11.96515 z m 2.524362,0 v 17.34683 h 1.845169 v -17.34683 z m -25.81198,-24.96866 c -0.608217,0 -1.094874,0.4371 -1.094874,0.98344 v 3.91558 c 0,0.54635 0.486657,0.98343 1.094874,0.98343 h 16.941057 c 0.608351,0 1.094878,-0.43708 1.094878,-0.98343 v -3.91558 c 0,-0.54634 -0.486527,-0.98344 -1.094878,-0.98344 z m 2.564901,5.8825 v 6.77478 h 1.297894 v -6.77478 z m 11.213012,0 v 6.77478 h 1.307836 v -6.77478 z" />
+  </g>
+</svg>

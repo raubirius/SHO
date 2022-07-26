@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   id="svg11300"
+   inkscape:export-ydpi="1500"
+   inkscape:export-filename="C:\Resources\Images\Buttons\Go Bottom Orange.png"
+   viewBox="0 0 35 35"
+   sodipodi:version="0.32"
+   inkscape:export-xdpi="1500"
+   version="1.0"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
+   sodipodi:docname="sipka-dole-na-dosku.svg"
+   width="35"
+   height="35">
+  <title
+     id="title6272">Go Top Orange</title>
+  <defs
+     id="defs3" />
+  <sodipodi:namedview
+     id="base"
+     fit-margin-left="10"
+     inkscape:showpageshadow="true"
+     inkscape:zoom="10.927711"
+     borderopacity="1"
+     inkscape:current-layer="layer1"
+     stroke="#4e9a06"
+     inkscape:cy="18.496483"
+     fill="#4e9a06"
+     inkscape:grid-bbox="true"
+     inkscape:window-maximized="1"
+     showgrid="false"
+     fit-margin-right="10"
+     inkscape:snap-global="false"
+     inkscape:document-units="px"
+     bordercolor="#000000"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     fit-margin-bottom="10"
+     inkscape:window-width="1920"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     pagecolor="#ffffff"
+     inkscape:cx="16.22981"
+     inkscape:window-height="1001"
+     fit-margin-top="10"
+     inkscape:document-rotation="0" />
+  <g
+     id="layer1"
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer">
+    <path
+       id="path10479"
+       style="color:#000000;fill:#ffff00;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:6.4;stroke-dasharray:none"
+       d="M 34.5,34.5 V 28.990008 H 19.377287 L 34.465005,12.445881 26.496211,12.388909 V 0.5 H 8.5299274 V 12.388909 H 0.49994182 L 15.872617,28.990008 H 0.50194152 V 34.5 H 34.494801 Z" />
+  </g>
+  <metadata
+     id="metadata29">
+    <rdf:RDF>
+      <cc:Work>
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <cc:license
+           rdf:resource="http://creativecommons.org/publicdomain/zero/1.0/" />
+        <dc:publisher>
+          <cc:Agent
+             rdf:about="http://openclipart.org/">
+            <dc:title>Openclipart</dc:title>
+          </cc:Agent>
+        </dc:publisher>
+        <dc:title>Go Top Orange</dc:title>
+        <dc:date>2012-01-06T01:31:15</dc:date>
+        <dc:description>Go bottom orange (Tango Style)</dc:description>
+        <dc:source>https://openclipart.org/detail/166865/go-bottom-orange-by-rygle</dc:source>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>rygle</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>arrow</rdf:li>
+            <rdf:li>bottom</rdf:li>
+            <rdf:li>button</rdf:li>
+            <rdf:li>buttons</rdf:li>
+            <rdf:li>conclusion</rdf:li>
+            <rdf:li>down</rdf:li>
+            <rdf:li>end</rdf:li>
+            <rdf:li>ending</rdf:li>
+            <rdf:li>finish</rdf:li>
+            <rdf:li>glossy</rdf:li>
+            <rdf:li>go</rdf:li>
+            <rdf:li>last</rdf:li>
+            <rdf:li>tango</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/publicdomain/zero/1.0/">
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Reproduction" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Distribution" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#DerivativeWorks" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+</svg>

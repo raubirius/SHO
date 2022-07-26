@@ -25,3 +25,9 @@ replay_pid*
 
 # trash directory
 @trash/
+
+# other files
+*.ksho
+*.cfg-
+*.url.htm
+

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   viewBox="0 0 45 45"
+   id="svg28"
+   sodipodi:docname="tlaciaren-1.svg"
+   width="45"
+   height="45"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)">
+  <defs
+     id="defs32" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1001"
+     id="namedview30"
+     showgrid="false"
+     inkscape:zoom="14.171876"
+     inkscape:cx="19.585533"
+     inkscape:cy="24.684914"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg28" />
+  <metadata
+     id="metadata2">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <path
+     id="path20"
+     style="fill:#ffff00;stroke:#333333;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+     d="M 12.083213,34.287343 H 32.466572 M 12.083213,39.599394 H 32.466572 M 7.954291,44.500002 H 37.00398 V 28.678396 H 7.954291 Z M 42.465362,18.256553 c 0,-1.104576 -0.895437,-2 -1.999999,-2 -1.104577,0 -2.000001,0.895437 -2.000001,2 0,1.104575 0.895437,2 2.000001,2 1.104575,0 1.999999,-0.895437 1.999999,-2 z M 8.3580165,0.50000002 H 36.632294 V 16.594588 H 8.3580165 Z M 0.5,22.810378 V 37.395242 H 7.9558199 V 28.677743 H 37.005833 v 8.717499 h 7.48446 V 22.810378 Z m 0,-11.787243 V 22.810378 H 44.490293 V 11.023135 h -7.856774 v 5.571371 H 8.3567733 v -5.571371 z" />
+</svg>

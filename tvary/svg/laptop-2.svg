@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   id="svg7393"
+   sodipodi:docname="laptop-2.svg"
+   viewBox="0 0 49.999997 44.999998"
+   version="1.1"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
+   width="50"
+   height="45">
+  <defs
+     id="defs15" />
+  <sodipodi:namedview
+     id="base"
+     bordercolor="#666666"
+     inkscape:pageshadow="2"
+     inkscape:window-y="-9"
+     fit-margin-left="0"
+     pagecolor="#ffffff"
+     fit-margin-top="0"
+     inkscape:window-maximized="1"
+     inkscape:zoom="10.817882"
+     inkscape:window-x="-9"
+     inkscape:window-height="1001"
+     showgrid="false"
+     borderopacity="1.0"
+     inkscape:current-layer="layer1"
+     inkscape:cx="31.694523"
+     inkscape:cy="24.598046"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:window-width="1920"
+     inkscape:pageopacity="0.0"
+     inkscape:document-units="px"
+     inkscape:document-rotation="0" />
+  <g
+     id="layer1"
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     transform="translate(-309.56,-477.56)">
+    <path
+       id="rect859"
+       style="fill:#ffff00;fill-rule:nonzero;stroke:#000000;stroke-width:0.999998;stroke-miterlimit:10;stroke-dasharray:none;stop-color:#000000"
+       d="m 310.23448,518.01224 h 48.64117 V 522.06 h -48.64117 z m 38.34069,-13.80223 h 3.24314 v 0.7466 h -3.24314 z m -1.33524,0.37666 c 0,0.62092 -1.14562,0.62092 -1.14562,0 0,-0.62094 1.14562,-0.62094 1.14562,0 m -2.09826,0 c 0,0.62092 -1.14373,0.62092 -1.14373,0 0,-0.62094 1.14373,-0.62094 1.14373,0 m -24.22521,9.69626 h 16.97749 l 0.57187,1.86464 h -18.21621 z m -5.15024,-8.39099 h 37.86304 l 2.38439,10.25563 h -16.21374 l -0.95375,-2.79699 h -19.07497 l -0.95374,2.79699 h -5.7225 z m -0.76299,-3.19417 h 39.10366 l 4.76876,15.31447 h -48.64117 z m 1.71675,-21.84079 h 35.66866 l -0.19,19.57895 h -35.0987 z M 314.04947,478.06 h 41.01117 l -0.95375,24.63777 h -39.10366 z" />
+  </g>
+  <metadata
+     id="metadata12">
+    <rdf:RDF>
+      <cc:Work>
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <cc:license
+           rdf:resource="http://creativecommons.org/publicdomain/zero/1.0/" />
+        <dc:publisher>
+          <cc:Agent
+             rdf:about="http://openclipart.org/">
+            <dc:title>Openclipart</dc:title>
+          </cc:Agent>
+        </dc:publisher>
+        <dc:title>Laptop</dc:title>
+        <dc:date>2012-08-02T14:24:18</dc:date>
+        <dc:description />
+        <dc:source>https://openclipart.org/detail/171417/laptop-by-cyberscooty-171417</dc:source>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>cyberscooty</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>computer</rdf:li>
+            <rdf:li>informatique</rdf:li>
+            <rdf:li>it</rdf:li>
+            <rdf:li>laptop</rdf:li>
+            <rdf:li>ordinateur</rdf:li>
+            <rdf:li>ordinateur portable</rdf:li>
+            <rdf:li>portable</rdf:li>
+            <rdf:li>server</rdf:li>
+            <rdf:li>serveur</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/publicdomain/zero/1.0/">
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Reproduction" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Distribution" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#DerivativeWorks" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+</svg>
