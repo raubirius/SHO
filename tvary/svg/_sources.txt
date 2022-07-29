@@ -1,0 +1,4 @@
+Some .svg files might have the source in their metadata, some came from some free portal (like https://freesvg.org/).
+All images were free-licensed or created by myself.
+The source for the milling machine was this picture:
+https://upload.wikimedia.org/wikipedia/commons/1/1c/Milling_machine_diagram.svg
