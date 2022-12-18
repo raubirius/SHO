@@ -622,9 +622,14 @@ public class Linka extends GRobot implements Činnosť
 			case DOPRAVNÍK:
 			case MENIČ:
 			case UVOĽŇOVAČ:
-				if (null == popis && null == linka.popis) return linka;
-				else if (null != popis && popis.equals(linka.popis))
-					return linka;
+				if (null == popis)
+				{
+					if (null == linka.popis) return linka;
+				}
+				else
+				{
+					if (popis.equals(linka.popis)) return linka;
+				}
 			}
 		}
 		return null;
