@@ -12,8 +12,7 @@ import static java.lang.Math.*;
 import static knižnica.Kláves.*;
 import static knižnica.Svet.*;
 import static knižnica.ÚdajeUdalostí.*;
-
-import static debug.Debug.*;
+import static knižnica.log.Log.*;
 
 /*
 Dohoda:
@@ -1666,7 +1665,7 @@ public class Systém extends GRobot
 		case DOLE: p = new Bod(0, -10); break;
 		case VPRAVO: p = new Bod(10, 0); break;
 		case VĽAVO: p = new Bod(-10, 0); break;
-		case MEDZERA: if (debugOn || krokuj) krok(); break;
+		case MEDZERA: if (logOn || krokuj) krok(); break;
 		case ESCAPE:
 			if (!connectorsFrom.isEmpty())
 				connectorsFrom.clear();
@@ -2055,13 +2054,13 @@ public class Systém extends GRobot
 	private void krok()
 	{
 		int brzda;
-		if (debugOn || krokuj)
+		if (logOn || krokuj)
 		{
 			čas += jednotkaČasu // TODO: Možno kvôli tomuto by sa mohlo
 				// umožniť zmeniť jednotku času.
 				* dilatácia; // (pridané)
 			// čas += 0.15; // (stará konštanta – 150 ms)
-			if (debugOn) System.out.println("\nkrok(" + čas + ")");
+			if (logOn) System.out.println("\nkrok(" + čas + ")");
 			brzda = 1;
 		}
 		else
@@ -2097,7 +2096,7 @@ public class Systém extends GRobot
 
 	@Override public void klik()
 	{
-		if (debugOn || krokuj) krok(); else
+		if (logOn || krokuj) krok(); else
 		if (myš().getClickCount() > 1)
 		{
 			if (myš().isControlDown()) vymažSpojniceNaKurzore();
@@ -2165,7 +2164,7 @@ public class Systém extends GRobot
 			myš = null;
 		}
 
-		if (!debugOn && !krokuj) krok();
+		if (!logOn && !krokuj) krok();
 		if (neboloPrekreslené()) prekresli();
 		// spustiČasomieru(); // TODO (del)
 	}
@@ -2300,7 +2299,7 @@ public class Systém extends GRobot
 	// Hlavná metóda:
 	public static void main(String[] args)
 	{
-		if (debugOn) režimLadenia(true, true);
+		if (logOn) režimLadenia(true, true);
 
 		try { použiKonfiguráciu("Systém.cfg"); } catch (Throwable t)
 		{

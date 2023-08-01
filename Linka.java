@@ -12,9 +12,9 @@ import knižnica.podpora.ScrollTextPane;
 import enumerácie.*;
 import static knižnica.Svet.*;
 import static knižnica.ÚdajeUdalostí.*;
+import static knižnica.log.Log.*;
 import static java.lang.Math.*;
 
-import static debug.Debug.*;
 
 public class Linka extends GRobot implements Činnosť
 {
@@ -3555,7 +3555,7 @@ public class Linka extends GRobot implements Činnosť
 
 	@Override public boolean činnosť()
 	{
-		Boolean retval = null; try { debugIn("(", this, ")");
+		Boolean retval = null; try { logIn("(", this, ")");
 
 		if (null != účel) switch (účel)
 		{
@@ -3573,7 +3573,7 @@ public class Linka extends GRobot implements Činnosť
 								indexMena % zoznamMien.size()));
 							++indexMena;
 						}
-						debug("novýZákazník: ", zákazník);
+						logInfo("novýZákazník: ", zákazník);
 						++produkcia;
 					}
 					čas += interval();
@@ -3601,7 +3601,7 @@ public class Linka extends GRobot implements Činnosť
 
 		return retval = false;
 
-		} finally { debugOut("Linka.činnosť: ", retval); }
+		} finally { logOut("Linka.činnosť: ", retval); }
 	}
 
 
@@ -3732,7 +3732,7 @@ public class Linka extends GRobot implements Činnosť
 			if (cieľ instanceof Linka)
 			{
 				Linka linka = (Linka)cieľ;
-				debug("cieľ: ", linka);
+				logInfo("cieľ: ", linka);
 				if (linka.evidujZákazníka(zákazník))
 				{
 					zákazník.priraďKLinke(linka, true);
@@ -3765,7 +3765,7 @@ public class Linka extends GRobot implements Činnosť
 
 	public boolean jeVoľná()
 	{
-		Boolean retval = null; try { debugIn("(", this, ")");
+		Boolean retval = null; try { logIn("(", this, ")");
 
 		// Ak je zoznam zákazníkov prázdny (resp. v rámci kapacity), tak je
 		// linka voľná.
@@ -3804,7 +3804,7 @@ public class Linka extends GRobot implements Činnosť
 
 		return retval = false;
 
-		} finally { debugOut("Linka.jeVoľná: ", retval); }
+		} finally { logOut("Linka.jeVoľná: ", retval); }
 	}
 
 	public double interval()
@@ -3854,7 +3854,7 @@ public class Linka extends GRobot implements Činnosť
 
 	public void účel(ÚčelLinky účel)
 	{
-		try { debugIn(účel, " (", this, "); Systém.čas: ", Systém.čas);
+		try { logIn(účel, " (", this, "); Systém.čas: ", Systém.čas);
 
 		produkcia = 0;
 		this.účel = účel;
@@ -3863,7 +3863,7 @@ public class Linka extends GRobot implements Činnosť
 		vyraďZákazníkov();
 		aktualizujKontextovúPonuku();
 
-		} finally { debugOut(); }
+		} finally { logOut(); }
 	}
 
 	public Zákazník dajZákazníka()
@@ -3875,7 +3875,7 @@ public class Linka extends GRobot implements Činnosť
 		case POSLEDNÝ:
 			{
 				Zákazník zákazník = zákazníci.lastElement();
-				debug("poslednýZákazník: ", zákazník);
+				logInfo("poslednýZákazník: ", zákazník);
 				return zákazník;
 			}
 			// break;
@@ -3883,21 +3883,21 @@ public class Linka extends GRobot implements Činnosť
 		case NÁHODNÝ:
 			{
 				Zákazník zákazník = zákazníci.náhodný();
-				debug("náhodnýZákazník: ", zákazník);
+				logInfo("náhodnýZákazník: ", zákazník);
 				return zákazník;
 			}
 			// break;
 		}
 
 		Zákazník zákazník = zákazníci.firstElement();
-		debug("prvýZákazník: ", zákazník);
+		logInfo("prvýZákazník: ", zákazník);
 		return zákazník;
 	}
 
 	// ‼Pozor‼ Zákazník.priraďKLinke(Linka) treba vykonať zvlášť‼
 	public boolean evidujZákazníka(Zákazník zákazník)
 	{
-		Boolean retval = null; try { debugIn(zákazník, " (", this, ")");
+		Boolean retval = null; try { logIn(zákazník, " (", this, ")");
 
 		if (jeVoľná())
 		{
@@ -3907,24 +3907,24 @@ public class Linka extends GRobot implements Činnosť
 		}
 		return retval = false;
 
-		} finally { debugOut("Linka.evidujZákazníka: ", retval); }
+		} finally { logOut("Linka.evidujZákazníka: ", retval); }
 	}
 
 	// ‼Pozor‼ Lepšie je použiť volanie Zákazník.vyraďZLinky(), ktoré volá
 	// túto metódu pre aktuálnu linku zákazníka.
 	public void odoberZákazníka(Zákazník zákazník)
 	{
-		try { debugIn(zákazník, "; zákazníci.indexOf(zákazník): ",
+		try { logIn(zákazník, "; zákazníci.indexOf(zákazník): ",
 			zákazníci.indexOf(zákazník), " (", this, ")");
 
 		zákazníci.remove(zákazník);
 
-		} finally { debugOut("zákazníci.size(): ", zákazníci.size()); }
+		} finally { logOut("zákazníci.size(): ", zákazníci.size()); }
 	}
 
 	public void vyraďZákazníkov()
 	{
-		try { debugIn("(", this, ")");
+		try { logIn("(", this, ")");
 
 		while (!zákazníci.isEmpty())
 		{
@@ -3933,7 +3933,7 @@ public class Linka extends GRobot implements Činnosť
 			zákazníci.remove(zákazník); // (pre istotu)
 		}
 
-		} finally { debugOut("zákazníci.size(): ", zákazníci.size()); }
+		} finally { logOut("zákazníci.size(): ", zákazníci.size()); }
 	}
 
 

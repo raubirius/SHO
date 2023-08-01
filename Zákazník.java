@@ -3,9 +3,8 @@ import java.awt.Font;
 import java.util.Vector;
 import knižnica.*;
 import static knižnica.Svet.*;
+import static knižnica.log.Log.*;
 import static java.lang.Math.*;
-
-import static debug.Debug.*;
 
 public class Zákazník extends GRobot implements Činnosť
 {
@@ -309,7 +308,7 @@ public class Zákazník extends GRobot implements Činnosť
 
 	@Override public boolean činnosť()
 	{
-		Boolean retval = null; try { debugIn("(", this, ")");
+		Boolean retval = null; try { logIn("(", this, ")");
 
 		// (Iba animačno-grafická záležitosť. Nemá vplyv na simuláciu:
 		if (null != vLinke && vLinke.jeDopravník()) upravCieľPodľaLinky();
@@ -351,7 +350,7 @@ public class Zákazník extends GRobot implements Činnosť
 		}
 		return retval = false;
 
-		} finally { debugOut("Zákazník.činnosť: ", retval); }
+		} finally { logOut("Zákazník.činnosť: ", retval); }
 	}
 
 
@@ -359,25 +358,25 @@ public class Zákazník extends GRobot implements Činnosť
 
 	public void pridajInterval(double interval)
 	{
-		try { debugIn(interval, " (", this, ")");
+		try { logIn(interval, " (", this, ")");
 
 		this.čas += (this.interval = interval);
 
-		} finally { debugOut("this.čas: ", this.čas); }
+		} finally { logOut("this.čas: ", this.čas); }
 	}
 
 	public void nastavInterval(double interval)
 	{
-		try { debugIn(interval, " (", this, ")");
+		try { logIn(interval, " (", this, ")");
 
 		this.čas = Systém.čas + (this.interval = interval);
 
-		} finally { debugOut("this.čas: ", this.čas); }
+		} finally { logOut("this.čas: ", this.čas); }
 	}
 
 	private void odíď()
 	{
-		try { debugIn("(", this, ")");
+		try { logIn("(", this, ")");
 
 		++Systém.odídených;
 		if (null != vLinke) ++vLinke.odídených;
@@ -402,12 +401,12 @@ public class Zákazník extends GRobot implements Činnosť
 		náhodnýSmer();
 		skoč();
 
-		} finally { debugOut(); }
+		} finally { logOut(); }
 	}
 
 	private void uvoľniMa()
 	{
-		try { debugIn("(", this, ")");
+		try { logIn("(", this, ")");
 
 		++Systém.vybavených;
 		if (null != vLinke)
@@ -420,7 +419,7 @@ public class Zákazník extends GRobot implements Činnosť
 		vyraďZLinky(true);
 		deaktivuj();
 
-		} finally { debugOut(); }
+		} finally { logOut(); }
 	}
 
 	// ‼Pozor‼ Linka.evidujZákazníka(Zákazník) treba vykonať zvlášť‼
@@ -429,18 +428,18 @@ public class Zákazník extends GRobot implements Činnosť
 	// situáciách, kedy volanie „evidujZákazníka“ nie je vyhovujúce.)
 	public void priraďKLinke(Linka vLinke, boolean evidujBodCesty)
 	{
-		try { debugIn(vLinke, " (", this, ")");
+		try { logIn(vLinke, " (", this, ")");
 
 		vyraďZLinky(false);
 		this.vLinke = vLinke;
 		if (evidujBodCesty) cesta.add(new BodCesty(this.vLinke));
 
-		} finally { debugOut("this.vLinke: ", this.vLinke); }
+		} finally { logOut("this.vLinke: ", this.vLinke); }
 	}
 
 	public void vyraďZLinky(boolean evidujBodCesty)
 	{
-		try { debugIn("(", this, ")");
+		try { logIn("(", this, ")");
 
 		if (null != vLinke)
 		{
@@ -449,7 +448,7 @@ public class Zákazník extends GRobot implements Činnosť
 		}
 		if (evidujBodCesty) cesta.add(new BodCesty(this.vLinke));
 
-		} finally { debugOut("this.vLinke: ", this.vLinke); }
+		} finally { logOut("this.vLinke: ", this.vLinke); }
 	}
 
 
