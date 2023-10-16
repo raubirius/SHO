@@ -884,7 +884,7 @@ public class Linka extends GRobot implements Činnosť
 			RežimVýberuLiniek.POSTUPNÉ : režimVýberuLiniek};
 
 		if (dialóg(popisyÚpravyRežimuVýberuLiniek, údaje,
-			"Režim výberu zákazníkov linky"))
+			"Režim výberu nasledujúcej z pripojených liniek"))
 			režimVýberuLiniek((RežimVýberuLiniek)údaje[0]);
 	}
 
